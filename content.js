@@ -64,7 +64,8 @@
   //   data-anim     -> which entrance keyframe runs
   //   data-size     -> S/M/L scaling
   function buildPopup(city, opts) {
-    const { animation, position, size, bgColor, textColor } = opts;
+    const { animation, position, size, bgColor, textColor,
+            brandChannel, brandLink, brandTagline, brandLogoUrl } = opts;
 
     const overlay = document.createElement('div');
     overlay.className = 'f420-popup';
@@ -105,6 +106,47 @@
     dismissBtn.setAttribute('aria-label', 'Dismiss popup');
     dismissBtn.innerHTML = '&times;';
 
+    // Optional streamer branding block. Only built when a channel name is set.
+    let brandBlock = null;
+    if (brandChannel && brandChannel.trim()) {
+      brandBlock = document.createElement('div');
+      brandBlock.className = 'f420-brand';
+
+      if (brandLogoUrl && /^(https?:|data:)/i.test(brandLogoUrl)) {
+        const logo = document.createElement('img');
+        logo.className = 'f420-brand-logo';
+        logo.src = brandLogoUrl;
+        logo.alt = '';
+        logo.onerror = () => logo.remove();  // hide if the URL is broken
+        brandBlock.appendChild(logo);
+      }
+
+      const textCol = document.createElement('div');
+      textCol.className = 'f420-brand-text';
+
+      // Channel name — link if a URL is set, plain text otherwise.
+      const nameEl = brandLink
+        ? document.createElement('a')
+        : document.createElement('span');
+      nameEl.className = 'f420-brand-name';
+      if (brandLink) {
+        nameEl.href = brandLink;
+        nameEl.target = '_blank';
+        nameEl.rel = 'noopener noreferrer';
+      }
+      nameEl.textContent = brandChannel.trim();
+      textCol.appendChild(nameEl);
+
+      if (brandTagline && brandTagline.trim()) {
+        const tag = document.createElement('div');
+        tag.className = 'f420-brand-tagline';
+        tag.textContent = brandTagline.trim();
+        textCol.appendChild(tag);
+      }
+
+      brandBlock.appendChild(textCol);
+    }
+
     // "madebybliss.com" — clickable link to the author's site.
     const credit = document.createElement('a');
     credit.className = 'f420-credit';
@@ -115,6 +157,7 @@
 
     body.appendChild(headline);
     body.appendChild(place);
+    if (brandBlock) body.appendChild(brandBlock);
     body.appendChild(credit);
     overlay.appendChild(body);
     overlay.appendChild(dismissBtn);
@@ -123,7 +166,8 @@
   }
 
   function showPopup(msg) {
-    const { city, animation, position, size, bgColor, textColor, durationSec, soundEnabled } = msg;
+    const { city, animation, position, size, bgColor, textColor, durationSec, soundEnabled,
+            brandChannel, brandLink, brandTagline, brandLogoUrl } = msg;
     const host = ensureHost();
     // Remove any popup currently on screen.
     const existing = host.querySelector('.f420-popup');
@@ -131,6 +175,7 @@
 
     const { overlay, dismissBtn } = buildPopup(city, {
       animation, position, size, bgColor, textColor,
+      brandChannel, brandLink, brandTagline, brandLogoUrl,
     });
     host.appendChild(overlay);
 

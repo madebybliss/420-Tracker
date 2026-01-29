@@ -20,6 +20,7 @@ extension announce 4:20 rolling across the globe throughout the day.
 - **Configurable duration** — auto-dismiss after any number of seconds.
 - **Click to dismiss** — click anywhere on the popup (or the close button) to close early.
 - **Cannabis theme** — green/gold glass card with shimmer text, custom cannabis-leaf branding throughout.
+- **Channel branding** — streamers can add their channel name, link, tagline, and logo to every popup.
 - **Toolbar popup** — shows the next upcoming 4:20 + countdown.
 - **Full settings page** — toggle every option.
 - **No spam** — each timezone fires exactly once per day.
@@ -50,12 +51,12 @@ Open via the toolbar popup → ** Full settings**, or right-click the icon → O
 | Setting            | What it does                                                |
 | ------------------ | ----------------------------------------------------------- |
 | Enable tracker     | Master on/off                                               |
-| Timezones to track | **All major zones (~38)** or **Iconic cities only (~16)**   |
+| Timezones to track | **All major zones (39)** or **Iconic cities only (16)**     |
 | Popup position     | 6 fixed spots: top/bottom × left/centre/right (slides in from there) |
 | Popup size         | Small, Medium, or Large                                     |
-| Colours            | Background + text colour pickers ("Made by Bliss" stays gold + outlined) |
 | Display duration   | Seconds before auto-dismiss (1–120)                         |
 | Play chime         | Soft sound on popup                                          |
+| Channel branding   | Optional: channel name, link, tagline, logo URL shown on every popup |
 
 Click **![leaf](icons/leaf.svg) Test Popup** to preview without waiting for the real 4:20.
 

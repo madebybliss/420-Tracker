@@ -13,6 +13,11 @@ const DEFAULT_SETTINGS = {
   bgColor: '#1a3a24',         // popup background colour
   textColor: '#eafff0',       // popup text colour
   enabled: true,              // master on/off
+  // Streamer branding (optional). Shown on every popup when brandChannel is set.
+  brandChannel: '',           // e.g. "Bliss TV"
+  brandLink: '',              // e.g. "https://youtube.com/@bliss"
+  brandTagline: '',           // e.g. "Medical cannabis education"
+  brandLogoUrl: '',           // e.g. "https://example.com/avatar.png"
 };
 
 // ---- TIMEZONES ----------------------------------------------------
@@ -174,6 +179,10 @@ async function firePopup(zone, settings) {
     textColor: settings.textColor,
     durationSec: settings.durationSec,
     soundEnabled: settings.soundEnabled,
+    brandChannel: settings.brandChannel,
+    brandLink: settings.brandLink,
+    brandTagline: settings.brandTagline,
+    brandLogoUrl: settings.brandLogoUrl,
   };
 
   const fireInto = async (target) => {
@@ -256,28 +265,93 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.sync.set(await getSettings());
   // Fire every minute — service workers may sleep, but alarms wake us.
   chrome.alarms.create('tick', { periodInMinutes: 1 });
+  // Check for updates once a day.
+  chrome.alarms.create('check-update', { periodInMinutes: 60 * 24 });
+  checkForUpdate(); // also check right after install/update
   console.log('[4:20 Tracker] Installed and ticking every 60s.');
 });
 
 chrome.runtime.onStartup.addListener(() => {
   chrome.alarms.create('tick', { periodInMinutes: 1 });
+  chrome.alarms.create('check-update', { periodInMinutes: 60 * 24 });
+  checkForUpdate(); // check each time the browser starts
   console.log('[4:20 Tracker] Started — ticking every 60s.');
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'tick') tick();
+  else if (alarm.name === 'check-update') checkForUpdate();
 });
 
-// Manual "test popup" message from the popup/options page.
+// ------------------------------------------------------------------
+// UPDATE CHECK
+// Pings GitHub's releases API to compare the installed version against
+// the latest release. Stores the result so the popup/options UI can show
+// an "update available" banner. Unpacked extensions can't self-update —
+// the user has to download the new zip and reload — but we can notify.
+// ------------------------------------------------------------------
+const UPDATE_REPO = 'madebybliss/420-Tracker';
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(`https://api.github.com/repos/${UPDATE_REPO}/releases/latest`, {
+      headers: { 'Accept': 'application/vnd.github+json' },
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const remoteTag = (data.tag_name || '').replace(/^v/, ''); // 'v1.3.6' -> '1.3.6'
+    const localVersion = chrome.runtime.getManifest().version;
+    const hasUpdate = remoteTag && compareVersions(remoteTag, localVersion) > 0;
+    const result = {
+      hasUpdate,
+      latestVersion: remoteTag,
+      currentVersion: localVersion,
+      downloadUrl: (data.assets && data.assets[0] && data.assets[0].browser_download_url)
+        || data.html_url
+        || `https://github.com/${UPDATE_REPO}/releases/latest`,
+      releaseNotes: data.html_url || `https://github.com/${UPDATE_REPO}/releases/latest`,
+      checkedAt: Date.now(),
+    };
+    await chrome.storage.local.set({ updateInfo: result });
+    console.log('[4:20 Tracker] Update check:', hasUpdate
+      ? `v${localVersion} -> v${remoteTag} available`
+      : `up to date (v${localVersion})`);
+  } catch (e) {
+    // Network failure / offline — silently skip. We'll retry next day or on startup.
+    console.log('[4:20 Tracker] Update check failed:', e && e.message);
+  }
+}
+
+// Returns >0 if a is newer than b, 0 if equal, <0 if a is older.
+function compareVersions(a, b) {
+  const pa = String(a).split('.').map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split('.').map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const diff = (pa[i] || 0) - (pb[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  return 0;
+}
+
+// Manual "test popup" / status messages from the popup/options page.
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  // Safe sendResponse — swallows the "channel closed" error that MV3 throws
+  // when the calling page navigates away or the service worker slept. The
+  // warning is harmless but noisy, so we suppress it.
+  const safeRespond = (payload) => {
+    try { sendResponse(payload); } catch (_) { /* channel already closed */ }
+  };
+
   if (msg.type === 'TEST_POPUP') {
+    // Fire-and-forget: the calling page ignores the response, so we don't
+    // keep the channel open (avoids the async-response warning).
     (async () => {
       const settings = await getSettings();
       const fakeZone = { city: msg.city || 'Test City', tz: 'UTC' };
       await firePopup(fakeZone, { ...settings, soundEnabled: msg.sound ?? settings.soundEnabled });
-      sendResponse({ ok: true });
+      safeRespond({ ok: true });
     })();
-    return true; // async response
+    return false;
   }
   if (msg.type === 'GET_STATUS') {
     (async () => {
@@ -286,16 +360,44 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       // Next upcoming 4:20 across active zones
       let next = null;
       for (const zone of zones) {
-        const now = new Date();
         const { hour, minute } = getZoneTime(zone.tz);
         let minutesUntil = (16 * 60 + 20) - (hour * 60 + minute);
         if (minutesUntil <= 0) minutesUntil += 24 * 60;
         if (!next || minutesUntil < next.minutesUntil) {
           next = { minutesUntil, city: zone.city };
         }
-        void now;
       }
-      sendResponse({ settings, zoneCount: zones.length, next });
+      safeRespond({ settings, zoneCount: zones.length, next });
+    })();
+    return true; // async response — channel kept open for GET_STATUS
+  }
+  if (msg.type === 'GET_UPDATE_STATUS') {
+    // Return cached update info immediately; optionally refresh first.
+    (async () => {
+      if (msg.refresh) await checkForUpdate();
+      const { updateInfo } = await chrome.storage.local.get('updateInfo');
+      safeRespond(updateInfo || { hasUpdate: false, currentVersion: chrome.runtime.getManifest().version });
+    })();
+    return true;
+  }
+  if (msg.type === 'FIRE_REAL_420') {
+    // Simulate a genuine 4:20 announcement — uses the real firePopup path
+    // (so it respects the silent-when-no-tab rule and opens example.com if
+    // needed) but with a real timezone so it's not treated as a test.
+    (async () => {
+      const settings = await getSettings();
+      const zone = { city: msg.city || 'London', tz: 'Europe/London' };
+      await firePopup(zone, settings);
+      safeRespond({ ok: true });
+    })();
+    return false;
+  }
+  if (msg.type === 'RESET_CACHE') {
+    // Clear the once-per-day dedup so popups can fire again for testing.
+    (async () => {
+      await chrome.storage.local.remove('firedToday');
+      console.log('[4:20 Tracker] Fired-today cache reset.');
+      safeRespond({ ok: true });
     })();
     return true;
   }

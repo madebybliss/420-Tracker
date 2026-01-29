@@ -9,6 +9,10 @@ const DEFAULTS = {
   position: 'top-right',
   size: 'medium',
   enabled: true,
+  brandChannel: '',
+  brandLink: '',
+  brandTagline: '',
+  brandLogoUrl: '',
 };
 
 const $ = (id) => document.getElementById(id);
@@ -24,7 +28,33 @@ async function load() {
   $('size').value            = s.size;
   $('durationSec').value     = s.durationSec;
   $('soundEnabled').checked  = s.soundEnabled;
+  $('brandChannel').value    = s.brandChannel;
+  $('brandLink').value       = s.brandLink;
+  $('brandTagline').value    = s.brandTagline;
+  $('brandLogoUrl').value    = s.brandLogoUrl;
+  updateLogoPreview(s.brandLogoUrl);
   refreshStatus();
+  refreshUpdateBanner();
+}
+
+// Show the update banner if a newer version is available on GitHub.
+async function refreshUpdateBanner() {
+  try {
+    const info = await chrome.runtime.sendMessage({ type: 'GET_UPDATE_STATUS' });
+    if (info && info.hasUpdate) {
+      $('updateVersion').textContent = info.latestVersion;
+      $('currentVersion').textContent = info.currentVersion;
+      $('updateBanner').style.display = 'flex';
+      $('updateLink').onclick = (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: info.downloadUrl });
+      };
+    } else {
+      $('updateBanner').style.display = 'none';
+    }
+  } catch (e) {
+    $('updateBanner').style.display = 'none';
+  }
 }
 
 async function save() {
@@ -35,32 +65,63 @@ async function save() {
     size:          $('size').value,
     durationSec:   Math.max(1, parseInt($('durationSec').value, 10) || 6),
     soundEnabled:  $('soundEnabled').checked,
+    brandChannel:  $('brandChannel').value.trim(),
+    brandLink:     $('brandLink').value.trim(),
+    brandTagline:  $('brandTagline').value.trim(),
+    brandLogoUrl:  $('brandLogoUrl').value.trim(),
   };
   await chrome.storage.sync.set(settings);
+}
+
+// Show/hide the logo preview based on the entered URL.
+// Accepts http(s) URLs and data: URLs (so users can paste a base64 image
+// directly to test without needing to host the file).
+function updateLogoPreview(url) {
+  const img = $('logoPreview');
+  if (url && /^(https?:|data:)/i.test(url)) {
+    img.src = url;
+    img.classList.remove('hidden');
+    img.onerror = () => img.classList.add('hidden');
+  } else {
+    img.classList.add('hidden');
+    img.removeAttribute('src');
+  }
 }
 
 async function refreshStatus() {
   const el = $('nextUp');
   try {
-    chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
-      if (!res || !res.next) {
-        el.innerHTML = `${LEAF}Tracker is running.`;
-        return;
-      }
-      const mins = res.next.minutesUntil;
-      const h = Math.floor(mins / 60);
-      const m = mins % 60;
-      const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
-      el.innerHTML = `${LEAF}Next 4:20: ${res.next.city} — in ${timeStr} (${res.zoneCount} zones tracked)`;
-    });
+    // Promise form (no callback) — avoids the MV3 "message channel closed"
+    // warning that callback-style sendMessage produces when the service
+    // worker sleeps between polls.
+    const res = await chrome.runtime.sendMessage({ type: 'GET_STATUS' });
+    if (!res || !res.next) {
+      el.innerHTML = `${LEAF}Tracker is running.`;
+      return;
+    }
+    const mins = res.next.minutesUntil;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const timeStr = h > 0 ? `${h}h ${m}m` : `${m}m`;
+    el.innerHTML = `${LEAF}Next 4:20: ${res.next.city} — in ${timeStr} (${res.zoneCount} zones tracked)`;
   } catch (e) {
+    // Service worker may be waking up — fail gracefully to the idle state.
     el.innerHTML = `${LEAF}Tracker is running.`;
   }
 }
 
 // Wire up inputs — save on any change.
-['enabled','timezoneMode','position','size','durationSec','soundEnabled'].forEach((id) => {
+['enabled','timezoneMode','position','size','durationSec','soundEnabled','brandChannel','brandLink','brandTagline'].forEach((id) => {
   $(id).addEventListener('change', () => { save(); refreshStatus(); });
+});
+// Branding text fields also save on `input` so typing persists immediately.
+['brandChannel','brandLink','brandTagline'].forEach((id) => {
+  $(id).addEventListener('input', () => { save(); });
+});
+// Logo URL updates the preview live on each keystroke.
+$('brandLogoUrl').addEventListener('input', () => {
+  updateLogoPreview($('brandLogoUrl').value.trim());
+  save();
 });
 
 // Toggle the city-list panel open/closed.
@@ -70,7 +131,29 @@ $('tzInfoBtn').addEventListener('click', () => {
 
 // Test popup fires the real popup in the active tab.
 $('testBtn').addEventListener('click', () => {
-  chrome.runtime.sendMessage({ type: 'TEST_POPUP', city: 'Test City', sound: $('soundEnabled').checked }, () => {});
+  try { chrome.runtime.sendMessage({ type: 'TEST_POPUP', city: 'Test City', sound: $('soundEnabled').checked }); } catch (_) {}
+});
+
+// "Fire real 4:20 now" — simulate an actual 4:20 firing. Uses the real
+// firePopup path with a real timezone so it behaves exactly like a genuine
+// announcement (opens example.com if needed, fires the green popup).
+$('fireRealBtn').addEventListener('click', () => {
+  try {
+    chrome.runtime.sendMessage({
+      type: 'FIRE_REAL_420',
+      city: 'London',   // pretend it just hit 4:20 in London
+    });
+  } catch (_) {}
+});
+
+// "Reset fired cache" — clears the once-per-day dedup so popups can fire
+// again for cities that already fired today (useful for testing).
+$('resetCacheBtn').addEventListener('click', async () => {
+  try {
+    await chrome.runtime.sendMessage({ type: 'RESET_CACHE' });
+    $('resetCacheBtn').textContent = 'Cache reset!';
+    setTimeout(() => { $('resetCacheBtn').textContent = 'Reset fired cache'; }, 2000);
+  } catch (_) {}
 });
 
 load();

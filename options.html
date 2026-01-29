@@ -58,7 +58,7 @@
     .row label { font-weight: 600; font-size: 15px; }
     .row .hint { font-size: 12px; color: var(--text-dim); font-weight: 400; margin-top: 2px; }
 
-    select, input[type="number"] {
+    select, input[type="number"], input[type="text"], input[type="url"] {
       background: var(--dark-2);
       color: var(--text);
       border: 1px solid rgba(118,222,130,0.3);
@@ -66,6 +66,10 @@
       padding: 8px 10px;
       font-size: 14px;
       min-width: 160px;
+    }
+    input[type="text"], input[type="url"] { width: 100%; box-sizing: border-box; }
+    input[type="text"]:focus, input[type="url"]:focus {
+      outline: none; border-color: var(--green-light);
     }
 
     /* Colour swatches */
@@ -113,7 +117,38 @@
       background: rgba(255,226,138,0.08); border: 1px dashed rgba(255,226,138,0.3);
       color: var(--gold); font-size: 14px; margin-bottom: 20px;
     }
+    .update-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      background: linear-gradient(135deg, rgba(46,125,50,0.95), rgba(27,94,32,0.95));
+      border: 1px solid var(--green-light); border-radius: 12px;
+      padding: 14px 18px; margin-bottom: 20px;
+    }
+    .update-title { font-size: 15px; font-weight: 700; color: #eafff0; }
+    .update-sub { font-size: 12px; color: #a9cbae; margin-top: 2px; }
+    .update-btn {
+      flex-shrink: 0; padding: 8px 16px; border-radius: 8px;
+      background: var(--gold); color: #1a3a24; font-size: 13px; font-weight: 700;
+      text-decoration: none; cursor: pointer; transition: background 0.18s ease;
+    }
+    .update-btn:hover { background: #fff; }
     .footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 24px; }
+    .card-heading {
+      font-size: 15px; font-weight: 700; color: var(--gold);
+      letter-spacing: 0.3px; text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .brand-row { flex-direction: column; align-items: stretch !important; gap: 4px !important; }
+    .brand-row .brand-inputs { width: 100%; }
+    .brand-row label { font-size: 13px; font-weight: 500; }
+    .logo-preview-wrap {
+      display: flex; align-items: center; gap: 10px; margin-top: 8px;
+    }
+    .logo-preview {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 1px solid rgba(118,222,130,0.3); object-fit: cover;
+      background: var(--dark-2);
+    }
+    .logo-preview.hidden { visibility: hidden; }
 
     /* Info button next to a label */
     .info-btn {
@@ -151,6 +186,14 @@
     <p class="sub">Announces when it's 4:20 PM somewhere in the world.</p>
 
     <div class="next-up" id="nextUp">Checking next 4:20…</div>
+
+    <div class="update-banner" id="updateBanner" style="display:none">
+      <div>
+        <div class="update-title">Update available — v<span id="updateVersion"></span></div>
+        <div class="update-sub">You're on v<span id="currentVersion"></span>. Download the new version, unzip, and reload the extension.</div>
+      </div>
+      <a href="#" id="updateLink" class="update-btn">Download</a>
+    </div>
 
     <div class="card">
       <div class="row">
@@ -241,6 +284,59 @@
         and press Test Popup from there. Pressing it from this settings page will open a
         new tab automatically.
       </p>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="test-btn" id="fireRealBtn" style="flex:1;font-size:13px;padding:10px">
+          Fire real 4:20 now
+        </button>
+        <button class="test-btn" id="resetCacheBtn" style="flex:1;font-size:13px;padding:10px;background:linear-gradient(135deg,#5a3a3a,#3a1a1a)">
+          Reset fired cache
+        </button>
+      </div>
+      <p style="font-size:11px;color:var(--text-dim);text-align:center;margin-top:8px;line-height:1.4">
+        "Fire real 4:20 now" simulates an actual 4:20 hitting (uses your real settings, fires on a webpage).
+        "Reset fired cache" clears the once-per-day dedup so the popup can fire again for testing.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-heading">Channel branding</div>
+      <div class="hint" style="margin-bottom: 14px">Optional. Brand every popup with your channel. Leave blank for no branding.</div>
+
+      <div class="row brand-row">
+        <div class="brand-inputs">
+          <label for="brandChannel">Channel name</label>
+          <div class="hint">Shown on every popup as a heading.</div>
+          <input type="text" id="brandChannel" placeholder="e.g. Bliss TV" style="margin-top:4px">
+        </div>
+      </div>
+
+      <div class="row brand-row">
+        <div class="brand-inputs">
+          <label for="brandLink">Channel link</label>
+          <div class="hint">Clicking the channel name opens this URL.</div>
+          <input type="url" id="brandLink" placeholder="https://youtube.com/@yourchannel" style="margin-top:4px">
+        </div>
+      </div>
+
+      <div class="row brand-row">
+        <div class="brand-inputs">
+          <label for="brandTagline">Tagline</label>
+          <div class="hint">Short slogan under the channel name.</div>
+          <input type="text" id="brandTagline" placeholder="e.g. Medical cannabis education" style="margin-top:4px">
+        </div>
+      </div>
+
+      <div class="row brand-row">
+        <div class="brand-inputs">
+          <label for="brandLogoUrl">Logo URL</label>
+          <div class="hint">Direct image URL for a circular avatar next to your channel name.</div>
+          <input type="url" id="brandLogoUrl" placeholder="https://example.com/avatar.png" style="margin-top:4px">
+          <div class="logo-preview-wrap">
+            <img id="logoPreview" class="logo-preview hidden" alt="Logo preview">
+            <span style="font-size:11px;color:var(--text-dim)">Preview</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <p class="footer">For educational/medical cannabis content. Stay chill. <img src="icons/leaf.svg" alt="" style="width:16px;height:16px;vertical-align:-3px"></p>

@@ -86,32 +86,41 @@
    SIZE — scales width, padding, and text. Medium = the original look.
    =================================================================== */
 .f420-popup[data-size="small"] {
-  min-width: 280px; max-width: 380px;
-  padding: 26px 28px 28px; border-radius: 16px;
-  --f420-leaf-size: 42px;
-  --f420-headline-size: 32px;
-  --f420-city-size: 19px;
+  min-width: 300px; max-width: 400px;
+  padding: 28px 30px 30px; border-radius: 16px;
+  --f420-leaf-size: 38px;
+  --f420-headline-size: 30px;
+  --f420-city-size: 18px;
+  --f420-brand-logo-size: 36px;
+  --f420-brand-name-size: 16px;
+  --f420-credit-size: 11px;
 }
 .f420-popup[data-size="medium"] {
-  min-width: 340px; max-width: 480px;
-  padding: 34px 38px 36px; border-radius: 20px;
-  --f420-leaf-size: 54px;
-  --f420-headline-size: 42px;
-  --f420-city-size: 24px;
+  min-width: 380px; max-width: 520px;
+  padding: 36px 40px 34px; border-radius: 20px;
+  --f420-leaf-size: 50px;
+  --f420-headline-size: 38px;
+  --f420-city-size: 22px;
+  --f420-brand-logo-size: 48px;
+  --f420-brand-name-size: 22px;
+  --f420-credit-size: 13px;
 }
 .f420-popup[data-size="large"] {
-  min-width: 420px; max-width: 600px;
-  padding: 42px 46px 44px; border-radius: 24px;
-  --f420-leaf-size: 68px;
-  --f420-headline-size: 54px;
-  --f420-city-size: 30px;
+  min-width: 460px; max-width: 640px;
+  padding: 44px 50px 40px; border-radius: 24px;
+  --f420-leaf-size: 64px;
+  --f420-headline-size: 50px;
+  --f420-city-size: 28px;
+  --f420-brand-logo-size: 60px;
+  --f420-brand-name-size: 28px;
+  --f420-credit-size: 16px;
 }
 
 /* ===================================================================
    CONTENT — text, dismiss button
    =================================================================== */
 
-.f420-body { text-align: center; min-width: 0; }
+.f420-body { text-align: center; min-width: 0; display: flex; flex-direction: column; align-items: center; }
 
 /* Leaf — inline next to the headline text, tints with the text colour. */
 .f420-leaf {
@@ -150,20 +159,64 @@
 }
 
 .f420-city {
-  font-size: var(--f420-city-size, 24px);
+  font-size: var(--f420-city-size, 22px);
   font-weight: 500;
   color: color-mix(in srgb, var(--f420-text) 82%, transparent);
-  margin-top: 8px;
+  margin-top: 10px;
+}
+
+/* Streamer branding block — logo, channel name, tagline stacked & centered. */
+.f420-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 28px;
+  padding-top: 22px;
+  border-top: 1px solid color-mix(in srgb, var(--f420-text) 14%, transparent);
+  width: 100%;
+}
+.f420-brand-logo {
+  width: var(--f420-brand-logo-size, 48px);
+  height: var(--f420-brand-logo-size, 48px);
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 2px solid color-mix(in srgb, var(--f420-text) 30%, transparent);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.f420-brand-text { text-align: center; min-width: 0; }
+.f420-brand-name {
+  display: inline-block;
+  font-size: var(--f420-brand-name-size, 22px);
+  font-weight: 700;
+  color: var(--f420-text);
+  -webkit-text-fill-color: var(--f420-text);   /* override inherited transparent from headline */
+  text-decoration: none;
+  line-height: 1.15;
+}
+a.f420-brand-name:hover {
+  color: #ffe28a;
+  -webkit-text-fill-color: #ffe28a;
+}
+.f420-brand-tagline {
+  font-size: calc(var(--f420-brand-name-size, 22px) * 0.7);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--f420-text) 92%, transparent);
+  -webkit-text-fill-color: color-mix(in srgb, var(--f420-text) 92%, transparent);
+  margin-top: 4px;
+  line-height: 1.25;
 }
 
 /* "madebybliss.com" link — small, gold with dark outline, clickable. */
 .f420-credit {
   display: inline-block;
-  font-size: calc(var(--f420-city-size, 24px) * 0.5);
+  font-size: var(--f420-credit-size, 13px);
   font-weight: 600;
   letter-spacing: 0.6px;
   color: #ffd54a;
-  margin-top: 22px;
+  margin-top: 26px;
   text-decoration: none;
   cursor: pointer;
   opacity: 0.92;

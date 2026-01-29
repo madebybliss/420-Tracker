@@ -11,20 +11,47 @@ async function load() {
   const s = await chrome.storage.sync.get({ enabled: true });
   $('enabled').checked = s.enabled;
   refresh();
+  refreshUpdateBanner();
+}
+
+// Check for update info and show the banner if a newer version exists.
+async function refreshUpdateBanner() {
+  try {
+    const info = await chrome.runtime.sendMessage({ type: 'GET_UPDATE_STATUS' });
+    if (info && info.hasUpdate) {
+      $('updateVersion').textContent = info.latestVersion;
+      $('updateBanner').style.display = 'flex';
+      $('updateLink').onclick = (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: info.downloadUrl });
+        window.close();
+      };
+    } else {
+      $('updateBanner').style.display = 'none';
+    }
+  } catch (e) {
+    $('updateBanner').style.display = 'none';
+  }
 }
 
 $('enabled').addEventListener('change', () => {
   chrome.storage.sync.set({ enabled: $('enabled').checked });
 });
 
-function refresh() {
-  chrome.runtime.sendMessage({ type: 'GET_STATUS' }, (res) => {
+async function refresh() {
+  try {
+    // Promise form (no callback) — avoids the MV3 "message channel closed"
+    // warning that callback-style sendMessage produces when the service
+    // worker sleeps between polls.
+    const res = await chrome.runtime.sendMessage({ type: 'GET_STATUS' });
     if (!res || !res.next) { $('next').innerHTML = `${LEAF}Running.`; return; }
     const mins = res.next.minutesUntil;
     const h = Math.floor(mins / 60), m = mins % 60;
     const t = h > 0 ? `${h}h ${m}m` : `${m}m`;
     $('next').innerHTML = `${LEAF}Next 4:20: ${res.next.city} in ${t}`;
-  });
+  } catch (e) {
+    $('next').innerHTML = `${LEAF}Running.`;
+  }
 }
 
 $('test').addEventListener('click', async () => {
