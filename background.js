@@ -154,7 +154,17 @@ async function waitForContentScript(tabId, timeoutMs) {
 }
 
 // Fire the popup into the active tab and (optionally) play a sound.
+//
+// Behaviour:
+//   - Real 4:20 announcement (zone.tz != 'UTC'): if there's no usable
+//     browser tab to inject into, STAY SILENT. We never fire OS-level
+//     desktop notifications for real announcements — they're jarring when
+//     the user isn't even looking at a browser.
+//   - Manual test (zone.tz === 'UTC'): always try to show something by
+//     opening a fresh tab if needed.
 async function firePopup(zone, settings) {
+  const isTest = zone.tz === 'UTC';
+
   const messagePayload = {
     type: 'SHOW_420',
     city: zone.city,
@@ -166,46 +176,42 @@ async function firePopup(zone, settings) {
     soundEnabled: settings.soundEnabled,
   };
 
+  const fireInto = async (target) => {
+    const payload = { ...messagePayload, animation: positionToAnimation(settings.position) };
+    await chrome.tabs.sendMessage(target.id, payload);
+  };
+
+  // Open a fresh normal webpage and fire the popup there. Used for tests.
+  const openAndFire = async () => {
+    const tab = await chrome.tabs.create({ url: 'https://example.com', active: true });
+    const ready = await waitForContentScript(tab.id, 8000);
+    if (ready) await fireInto(tab);
+  };
+
   try {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    // Helper to fire the popup into a tab, opening example.com first if the
-    // active tab is one we can't inject into (chrome:// pages, the settings
-    // page, etc.). Used for both the initial attempt and the recovery path.
-    const fireInto = async (target) => {
-      const payload = { ...messagePayload, animation: positionToAnimation(settings.position) };
-      await chrome.tabs.sendMessage(target.id, payload);
-    };
-
-    // Active tab unusable? For manual tests (tz==='UTC'), open a real page.
+    // No usable active tab (no tab at all, or a restricted chrome:// page).
     if (!tab || isRestrictedUrl(tab.url)) {
-      if (zone.tz === 'UTC') {
-        tab = await chrome.tabs.create({ url: 'https://example.com', active: true });
-        const ready = await waitForContentScript(tab.id, 8000);
-        if (!ready) { showFallbackNotification(zone); return; }
-      } else {
-        showFallbackNotification(zone);
-        return;
+      if (isTest) {
+        await openAndFire();
       }
+      // Real announcement + no browser tab → do nothing (stay silent).
+      return;
     }
 
-    // Try to message the tab. If the content script isn't there (restricted
-    // page we couldn't detect from its URL), recover for tests by opening a
-    // normal webpage and firing there.
+    // Try to message the active tab.
     try {
       await fireInto(tab);
     } catch (sendErr) {
-      if (zone.tz === 'UTC') {
-        tab = await chrome.tabs.create({ url: 'https://example.com', active: true });
-        const ready = await waitForContentScript(tab.id, 8000);
-        if (ready) { await fireInto(tab); }
-        else { showFallbackNotification(zone); }
-      } else {
-        showFallbackNotification(zone);
-      }
+      // Content script not present in this tab. Tests recover by opening a
+      // new page; real announcements stay silent.
+      if (isTest) await openAndFire();
     }
   } catch (e) {
-    showFallbackNotification(zone);
+    // Total failure — only show the fallback for manual tests, never for
+    // real announcements.
+    if (isTest) showFallbackNotification(zone);
   }
 }
 
