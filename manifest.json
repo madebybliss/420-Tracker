@@ -1,0 +1,53 @@
+{
+  "manifest_version": 3,
+  "name": "4:20 Tracker — Global Cannabis Time",
+  "version": "1.2.3",
+  "description": "Announces when it's 4:20 PM across major time zones worldwide. Perfect for streams and chill vibes.",
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting",
+    "notifications"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["popup.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "4:20 Tracker"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["sounds/chime.mp3", "sounds/chime.ogg", "icons/leaf.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

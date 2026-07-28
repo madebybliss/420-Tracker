@@ -1,0 +1,271 @@
+/* ===================================================================
+   4:20 Tracker — Popup styles
+   Cannabis-themed glass card driven by CSS custom properties so the user
+   can recolour it from the settings page. High specificity + all-classes
+   so we never collide with host-page styling.
+   =================================================================== */
+
+#four20-tracker-host {
+  all: initial;
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483647;            /* max */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+#four20-tracker-host * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.f420-popup {
+  position: absolute;
+  pointer-events: auto;
+  /* Sizing defaults = "medium"; overridden by [data-size] below */
+  padding: 18px 22px;
+  min-width: 280px;
+  max-width: 420px;
+  border-radius: 18px;
+  cursor: pointer;
+  text-align: center;
+
+  /* --- Colours via CSS custom properties (set inline by content.js) --- *
+   * Fallbacks = the default cannabis-green theme.                       */
+  --f420-bg:   #1a3a24;
+  --f420-text: #eafff0;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--f420-text) 10%, transparent), transparent 70%),
+    var(--f420-bg);
+  color: var(--f420-text);
+  border: 1px solid color-mix(in srgb, var(--f420-text) 30%, transparent);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+
+  /* Entrance animation default; overridden per-[data-anim] below */
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.f420-popup.f420-visible {
+  animation: f420-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.f420-popup.f420-leaving {
+  animation: f420-leave 0.4s ease-in forwards;
+}
+
+/* ===================================================================
+   POSITION — anchors the popup to a screen corner or edge.
+   (Replaces the old data-anim position block.)
+   =================================================================== */
+.f420-popup[data-position="top-left"],
+.f420-popup[data-position="top-center"],
+.f420-popup[data-position="top-right"]    { top: 24px; bottom: auto; }
+.f420-popup[data-position="bottom-left"],
+.f420-popup[data-position="bottom-center"],
+.f420-popup[data-position="bottom-right"] { top: auto; bottom: 24px; }
+
+.f420-popup[data-position="top-left"],
+.f420-popup[data-position="bottom-left"]  { left: 24px; right: auto; }
+.f420-popup[data-position="top-right"],
+.f420-popup[data-position="bottom-right"] { left: auto; right: 24px; }
+
+.f420-popup[data-position="top-center"],
+.f420-popup[data-position="bottom-center"]{
+  left: 50%; right: auto;
+  transform: translateX(-50%);
+}
+
+/* ===================================================================
+   SIZE — scales width, padding, and text. Medium = the original look.
+   =================================================================== */
+.f420-popup[data-size="small"] {
+  min-width: 280px; max-width: 380px;
+  padding: 26px 28px 28px; border-radius: 16px;
+  --f420-leaf-size: 42px;
+  --f420-headline-size: 32px;
+  --f420-city-size: 19px;
+}
+.f420-popup[data-size="medium"] {
+  min-width: 340px; max-width: 480px;
+  padding: 34px 38px 36px; border-radius: 20px;
+  --f420-leaf-size: 54px;
+  --f420-headline-size: 42px;
+  --f420-city-size: 24px;
+}
+.f420-popup[data-size="large"] {
+  min-width: 420px; max-width: 600px;
+  padding: 42px 46px 44px; border-radius: 24px;
+  --f420-leaf-size: 68px;
+  --f420-headline-size: 54px;
+  --f420-city-size: 30px;
+}
+
+/* ===================================================================
+   CONTENT — text, dismiss button
+   =================================================================== */
+
+.f420-body { text-align: center; min-width: 0; }
+
+/* Leaf — inline next to the headline text, tints with the text colour. */
+.f420-leaf {
+  display: inline-block;
+  vertical-align: middle;
+  width: var(--f420-leaf-size, 54px);
+  height: var(--f420-leaf-size, 54px);
+  margin-right: 12px;
+  color: var(--f420-text);
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+  animation: f420-sway 2.4s ease-in-out infinite;
+}
+.f420-leaf svg { display: block; width: 100%; height: 100%; }
+
+/* Headline = flex row so the leaf and text share one line, centered. */
+.f420-headline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--f420-headline-size, 42px);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  line-height: 1.1;
+}
+.f420-headline-text {
+  /* Shimmering gradient using the text colour as both ends. */
+  background: linear-gradient(90deg,
+    color-mix(in srgb, var(--f420-text) 70%, #ffd54a),
+    var(--f420-text),
+    color-mix(in srgb, var(--f420-text) 70%, #ffd54a));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: f420-shimmer 3s linear infinite;
+}
+
+.f420-city {
+  font-size: var(--f420-city-size, 24px);
+  font-weight: 500;
+  color: color-mix(in srgb, var(--f420-text) 82%, transparent);
+  margin-top: 8px;
+}
+
+/* "madebybliss.com" link — small, gold with dark outline, clickable. */
+.f420-credit {
+  display: inline-block;
+  font-size: calc(var(--f420-city-size, 24px) * 0.5);
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  color: #ffd54a;
+  margin-top: 22px;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0.92;
+  transition: opacity 0.18s ease;
+  /* Outline: layered dark shadows fake a stroke on all sides so the gold
+     link stays readable on any background/foreground colour combo. */
+  text-shadow:
+    -0.5px -0.5px 0 rgba(0,0,0,0.9),
+     0.5px -0.5px 0 rgba(0,0,0,0.9),
+    -0.5px  0.5px 0 rgba(0,0,0,0.9),
+     0.5px  0.5px 0 rgba(0,0,0,0.9),
+     0 1px 2px rgba(0,0,0,0.8);
+  -webkit-text-fill-color: #ffd54a;   /* overrides headline clip inheritance */
+}
+.f420-credit:hover { opacity: 1; }
+
+/* Close button in the card's bottom-right corner. */
+.f420-dismiss {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  top: auto;
+  z-index: 2;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--f420-text) 14%, transparent);
+  color: var(--f420-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.f420-dismiss:hover {
+  background: color-mix(in srgb, var(--f420-text) 28%, transparent);
+  transform: rotate(90deg);
+}
+
+/* ===================================================================
+   Entrance animations — one keyframe per direction.
+   [data-anim] picks the entrance; position is handled separately above.
+   Centered positions keep their translateX(-50%) in the keyframes.
+   =================================================================== */
+
+.f420-popup[data-anim="slide-top"].f420-visible    { animation-name: f420-in-top; }
+.f420-popup[data-anim="slide-bottom"].f420-visible { animation-name: f420-in-bottom; }
+.f420-popup[data-anim="slide-left"].f420-visible   { animation-name: f420-in-left; }
+.f420-popup[data-anim="slide-right"].f420-visible  { animation-name: f420-in-right; }
+.f420-popup[data-anim="slide-tl"].f420-visible     { animation-name: f420-in-tl; }
+.f420-popup[data-anim="slide-tr"].f420-visible     { animation-name: f420-in-tr; }
+.f420-popup[data-anim="slide-bl"].f420-visible     { animation-name: f420-in-bl; }
+.f420-popup[data-anim="slide-br"].f420-visible     { animation-name: f420-in-br; }
+.f420-popup[data-anim="fade"].f420-visible         { animation-name: f420-in-fade; }
+.f420-popup[data-anim="zoom"].f420-visible         { animation-name: f420-in-zoom; }
+
+/* Generic enter/leave (used when no specific data-anim matches) */
+@keyframes f420-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes f420-leave { from { opacity: 1; } to { opacity: 0; transform: scale(0.92); } }
+
+/* Corner slides — no translateX because corners are anchored left/right */
+@keyframes f420-in-tl { from { opacity:0; transform: translate(-120%,-120%); } to { opacity:1; transform: translate(0,0); } }
+@keyframes f420-in-tr { from { opacity:0; transform: translate(120%,-120%); }  to { opacity:1; transform: translate(0,0); } }
+@keyframes f420-in-bl { from { opacity:0; transform: translate(-120%,120%); }  to { opacity:1; transform: translate(0,0); } }
+@keyframes f420-in-br { from { opacity:0; transform: translate(120%,120%); }   to { opacity:1; transform: translate(0,0); } }
+
+/* Edge slides */
+@keyframes f420-in-top    { from { opacity:0; transform: translate(-50%,-120%); } to { opacity:1; transform: translate(-50%,0); } }
+@keyframes f420-in-bottom { from { opacity:0; transform: translate(-50%,120%); }  to { opacity:1; transform: translate(-50%,0); } }
+@keyframes f420-in-left   { from { opacity:0; transform: translateX(-120%); }     to { opacity:1; transform: translateX(0); } }
+@keyframes f420-in-right  { from { opacity:0; transform: translateX(120%); }      to { opacity:1; transform: translateX(0); } }
+
+/* Fade / zoom (used by centered positions) */
+@keyframes f420-in-fade { from { opacity:0; transform: translateX(-50%); }          to { opacity:1; transform: translateX(-50%); } }
+@keyframes f420-in-zoom { from { opacity:0; transform: translateX(-50%) scale(0.6); } to { opacity:1; transform: translateX(-50%) scale(1); } }
+
+/* Decorative loops */
+@keyframes f420-sway {
+  0%, 100% { transform: rotate(-7deg); }
+  50%      { transform: rotate(7deg); }
+}
+@keyframes f420-shimmer {
+  to { background-position: 200% center; }
+}
+
+/* Respect reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  .f420-popup.f420-visible,
+  .f420-popup.f420-leaving { animation-duration: 0.01ms !important; }
+  .f420-leaf { animation: none; }
+  .f420-headline {
+    animation: none;
+    -webkit-text-fill-color: var(--f420-text);
+    color: var(--f420-text);
+  }
+}
+
+/* Fallback for browsers without color-mix() (older Chromium): the var()
+   fallback chain still produces a solid colour, just without the tinted
+   mixes. Acceptable degradation. */
