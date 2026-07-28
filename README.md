@@ -247,3 +247,8 @@ shows up via the window capture whenever 4:20 hits. ![leaf](icons/leaf.svg)
 - The tracker only fires in the **active tab** so it doesn't spam background tabs.
 
 Stay chill. ![leaf](icons/leaf.svg)
+
+
+Feel Free To Join The [Discord](https://discord.gg/6aWfHfpbG)
+
+
