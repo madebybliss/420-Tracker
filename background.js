@@ -195,7 +195,16 @@ async function firePopup(zone, settings) {
 
   const fireInto = async (target) => {
     const payload = { ...messagePayload, animation: positionToAnimation(settings.position) };
-    await chrome.tabs.sendMessage(target.id, payload);
+    const response = await chrome.tabs.sendMessage(target.id, payload);
+    if (!response || !response.ok) throw new Error('Popup was not acknowledged');
+  };
+
+  // Pages that were open when an unpacked extension was installed/reloaded do
+  // not receive its declarative content scripts. Inject them on demand, then
+  // retry, so a perfectly normal already-open webpage cannot lose the alert.
+  const injectInto = async (target) => {
+    await chrome.scripting.insertCSS({ target: { tabId: target.id }, files: ['popup.css'] });
+    await chrome.scripting.executeScript({ target: { tabId: target.id }, files: ['content.js'] });
   };
 
   // Open a fresh normal webpage and fire the popup there. Used for tests.
@@ -207,26 +216,26 @@ async function firePopup(zone, settings) {
   };
 
   try {
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-    // No usable active tab (no tab at all, or a restricted chrome:// page).
+    // lastFocusedWindow identifies the window the user is actually viewing.
+    // Looking at every tab could put the popup in an unrelated background tab.
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (!tab || isRestrictedUrl(tab.url)) {
-      if (isTest) {
-        return await openAndFire();
-      }
-      // Real announcement + no browser tab → do nothing (stay silent).
-      return false;
+      return isTest ? await openAndFire() : false;
     }
 
-    // Try to message the active tab.
     try {
       await fireInto(tab);
       return true;
-    } catch (sendErr) {
-      // Content script not present in this tab. Tests recover by opening a
-      // new page; real announcements stay silent.
-      if (isTest) return await openAndFire();
-      return false;
+    } catch (_) {
+      // Most commonly an old page from before the extension was reloaded.
+      try {
+        await injectInto(tab);
+        await fireInto(tab);
+        return true;
+      } catch (injectError) {
+        console.warn('[4:20 Tracker] Could not show popup in active tab:', injectError && injectError.message);
+        return isTest ? await openAndFire() : false;
+      }
     }
   } catch (e) {
     // Total failure — only show the fallback for manual tests, never for
@@ -273,22 +282,30 @@ function showFallbackNotification(zone) {
 // ------------------------------------------------------------------
 // ALARM + INSTALL LIFECYCLE
 // ------------------------------------------------------------------
+async function ensureAlarms() {
+  const tickAlarm = await chrome.alarms.get('tick');
+  if (!tickAlarm) chrome.alarms.create('tick', { periodInMinutes: 1 });
+
+  const updateAlarm = await chrome.alarms.get('check-update');
+  if (!updateAlarm) chrome.alarms.create('check-update', { periodInMinutes: 60 * 24 });
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.storage.sync.set(await getSettings());
-  // Fire every minute — service workers may sleep, but alarms wake us.
-  chrome.alarms.create('tick', { periodInMinutes: 1 });
-  // Check for updates once a day.
-  chrome.alarms.create('check-update', { periodInMinutes: 60 * 24 });
+  await ensureAlarms();
   checkForUpdate(); // also check right after install/update
   console.log('[4:20 Tracker] Installed and ticking every 60s.');
 });
 
-chrome.runtime.onStartup.addListener(() => {
-  chrome.alarms.create('tick', { periodInMinutes: 1 });
-  chrome.alarms.create('check-update', { periodInMinutes: 60 * 24 });
+chrome.runtime.onStartup.addListener(async () => {
+  await ensureAlarms();
   checkForUpdate(); // check each time the browser starts
   console.log('[4:20 Tracker] Started — ticking every 60s.');
 });
+
+// Alarms normally persist, but Chrome documents that they may be cleared on
+// restart. Also repair them whenever this service worker is loaded.
+ensureAlarms().catch((e) => console.warn('[4:20 Tracker] Alarm setup failed:', e && e.message));
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'tick') tick();

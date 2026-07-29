@@ -204,6 +204,10 @@
     if (!msg) return;
     if (msg.type === 'SHOW_420') {
       showPopup(msg);
+      // The worker only marks this city as announced after the page confirms
+      // that it rendered the popup. Without an acknowledgement, a successful
+      // message send is indistinguishable from a dropped alert.
+      sendResponse({ ok: true });
     } else if (msg.type === 'PING_420') {
       // Readiness probe used by the background before sending a test popup
       // to a freshly-opened tab.
