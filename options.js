@@ -124,6 +124,30 @@ $('brandLogoUrl').addEventListener('input', () => {
   save();
 });
 
+// "Populate default image" — loads the bundled default-logo.png and fills
+// the Logo URL field with its base64 data URL. Handy for testing without
+// needing to host an image or paste a long string.
+$('populateDefaultLogo').addEventListener('click', async () => {
+  try {
+    const url = chrome.runtime.getURL('icons/default-logo.png');
+    const blob = await (await fetch(url)).blob();
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const dataUrl = reader.result;
+      $('brandLogoUrl').value = dataUrl;
+      updateLogoPreview(dataUrl);
+      await save();
+      const btn = $('populateDefaultLogo');
+      const orig = btn.textContent;
+      btn.textContent = 'Added!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    };
+    reader.readAsDataURL(blob);
+  } catch (e) {
+    console.log('Could not load default logo:', e);
+  }
+});
+
 // Toggle the city-list panel open/closed.
 $('tzInfoBtn').addEventListener('click', () => {
   $('cityPanel').classList.toggle('open');

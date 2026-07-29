@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "4:20 Tracker — Global Cannabis Time",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Announces when it's 4:20 PM across major time zones worldwide. Perfect for streams and chill vibes.",
   "permissions": [
     "storage",
@@ -47,7 +47,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["sounds/chime.mp3", "sounds/chime.ogg", "icons/leaf.svg"],
+      "resources": ["sounds/chime.mp3", "sounds/chime.ogg", "icons/leaf.svg", "icons/default-logo.png"],
       "matches": ["<all_urls>"]
     }
   ]
