@@ -68,6 +68,11 @@ $('test').addEventListener('click', async () => {
   window.close();
 });
 
+$('testScheduler').addEventListener('click', async () => {
+  await chrome.runtime.sendMessage({ type: 'SCHEDULE_TEST_POPUP' });
+  window.close();
+});
+
 $('openSettings').addEventListener('click', (e) => {
   e.preventDefault();
   chrome.runtime.openOptionsPage();

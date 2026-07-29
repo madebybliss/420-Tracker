@@ -214,4 +214,16 @@
       sendResponse({ ok: true });
     }
   });
+
+  // A visible webpage gives the scheduler extra chances during the exact
+  // 4:20 minute even if Chrome delays a background alarm under load.
+  function heartbeat() {
+    if (document.visibilityState !== 'visible') return;
+    try {
+      const pending = chrome.runtime.sendMessage({ type: 'PAGE_HEARTBEAT_420' });
+      if (pending && typeof pending.catch === 'function') pending.catch(() => {});
+    } catch (_) {}
+  }
+  heartbeat();
+  setInterval(heartbeat, 15_000);
 })();

@@ -64,9 +64,9 @@ Click **![leaf](icons/leaf.svg) Test Popup** to preview without waiting for the 
 
 ## How it works
 
-- A background service worker runs a `chrome.alarms` tick **every 60 seconds**.
+- A background service worker checks on aligned 30-second boundaries, reinforced by a 15-second heartbeat from the visible webpage.
 - On each tick it checks the local time in every tracked timezone via `Intl.DateTimeFormat`.
-- The first minute it sees a zone sitting at exactly **16:20**, it injects a popup into the active tab and records the firing so it won't repeat.
+- It injects the popup only while a zone's clock reads **16:20** and records the firing so it won't repeat. It never announces late at 16:21 or afterward.
 - If the active tab can't be injected (e.g. `chrome://` pages or a fresh tab), it falls back to a standard Chrome notification.
 - Settings are stored in `chrome.storage.sync` and persist across browser restarts.
 

@@ -101,32 +101,44 @@ function getZoneDate(tz) {
 }
 
 // ------------------------------------------------------------------
-// MAIN TICK — runs once a minute via chrome.alarms.
-// Checks every active timezone; the first time we see a zone sitting
-// at exactly 16:20 local time we fire the popup for it.
+// MAIN TICK — requested by aligned alarms and visible-page heartbeats.
+// Checks every active timezone and fires only while its clock reads 16:20.
 // ------------------------------------------------------------------
 async function tick() {
+  const now = Date.now();
   const settings = await getSettings();
+
+  // A one-shot diagnostic that deliberately travels through this real tick
+  // path. It proves that alarms/heartbeats can wake the worker and deliver to
+  // the active page; unlike TEST_POPUP it does not fire directly from a click.
+  const { scheduledTestAt } = await chrome.storage.local.get('scheduledTestAt');
+  if (Number.isFinite(scheduledTestAt)) {
+    if (now >= scheduledTestAt && now < scheduledTestAt + 60_000) {
+      const shown = await firePopup({ city: 'Automatic Scheduler Test', tz: 'UTC' }, settings);
+      if (shown) await chrome.storage.local.remove('scheduledTestAt');
+    } else if (now >= scheduledTestAt + 60_000) {
+      await chrome.storage.local.remove('scheduledTestAt');
+    }
+  }
+
   if (!settings.enabled) return;
 
   const zones = activeZones(settings.timezoneMode);
 
   // Load the set of "already-fired" keys for today so we never spam.
   const { firedToday = {} } = await chrome.storage.local.get('firedToday');
-  // Clean: drop any fired keys from a previous date in any zone.
-  // (Simplest: wipe storage at first 4:20-zone-day boundary mismatch.)
+
+  // Retain only recent dedup entries so local storage cannot grow forever.
   const cleaned = {};
-  let dirty = false;
+  let storageDirty = false;
   for (const [key, val] of Object.entries(firedToday)) {
-    const [dateStr] = key.split('|');
-    if (dateStr === val.date) cleaned[key] = val;
-    else dirty = true;
+    if (val && Number.isFinite(val.firedAt) && Date.now() - val.firedAt < 48 * 60 * 60 * 1000) cleaned[key] = val;
+    else storageDirty = true;
   }
 
-  let didFire = false;
   for (const zone of zones) {
     const { hour, minute } = getZoneTime(zone.tz);
-    if (hour !== 16 || minute !== 20) continue; // not 4:20 here
+    if (hour !== 16 || minute !== 20) continue;
 
     const dateStr = getZoneDate(zone.tz);
     const key = `${dateStr}|${zone.city}`;
@@ -137,13 +149,21 @@ async function tick() {
     const shown = await firePopup(zone, settings);
     if (shown) {
       cleaned[key] = { date: dateStr, firedAt: Date.now() };
-      didFire = true;
+      storageDirty = true;
     }
   }
 
-  if (didFire || dirty) {
-    await chrome.storage.local.set({ firedToday: cleaned });
+  if (storageDirty) await chrome.storage.local.set({ firedToday: cleaned });
+}
+
+// Alarm and visible-page heartbeats can arrive together. Share one tick so
+// they cannot race and render the same city twice.
+let tickInFlight = null;
+function requestTick() {
+  if (!tickInFlight) {
+    tickInFlight = tick().finally(() => { tickInFlight = null; });
   }
+  return tickInFlight;
 }
 
 // Poll a tab until its content script responds, or until timeoutMs elapses.
@@ -284,7 +304,13 @@ function showFallbackNotification(zone) {
 // ------------------------------------------------------------------
 async function ensureAlarms() {
   const tickAlarm = await chrome.alarms.get('tick');
-  if (!tickAlarm) chrome.alarms.create('tick', { periodInMinutes: 1 });
+  if (!tickAlarm || tickAlarm.periodInMinutes !== 0.5) {
+    if (tickAlarm) await chrome.alarms.clear('tick');
+    // Align checks to :00 and :30 instead of preserving an arbitrary install
+    // time. Chrome 120+ supports 30-second extension alarms.
+    const nextBoundary = Math.ceil(Date.now() / 30_000) * 30_000;
+    chrome.alarms.create('tick', { when: nextBoundary, periodInMinutes: 0.5 });
+  }
 
   const updateAlarm = await chrome.alarms.get('check-update');
   if (!updateAlarm) chrome.alarms.create('check-update', { periodInMinutes: 60 * 24 });
@@ -308,7 +334,7 @@ chrome.runtime.onStartup.addListener(async () => {
 ensureAlarms().catch((e) => console.warn('[4:20 Tracker] Alarm setup failed:', e && e.message));
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'tick') tick();
+  if (alarm.name === 'tick') requestTick();
   else if (alarm.name === 'check-update') checkForUpdate();
 });
 
@@ -475,6 +501,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
   if (msg.type === 'UPDATE_LATER') {
     snoozeUpdate().then(() => safeRespond({ ok: true }));
+    return true;
+  }
+  if (msg.type === 'PAGE_HEARTBEAT_420') {
+    requestTick();
+    return false;
+  }
+  if (msg.type === 'SCHEDULE_TEST_POPUP') {
+    (async () => {
+      const scheduledTestAt = Math.floor(Date.now() / 60_000) * 60_000 + 60_000;
+      await chrome.storage.local.set({ scheduledTestAt });
+      safeRespond({ ok: true, scheduledTestAt });
+    })();
     return true;
   }
   if (msg.type === 'FIRE_REAL_420') {
