@@ -29,14 +29,16 @@
       padding: 10px; border-radius: 10px; color: #ffe28a; margin-bottom: 12px;
     }
     .update-banner {
-      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      display: flex; flex-direction: column; align-items: stretch; gap: 8px;
       background: linear-gradient(135deg, #2e7d32, #1b5e20);
       border: 1px solid #76de82; border-radius: 10px;
       padding: 10px 12px; margin-bottom: 12px;
     }
     .update-text { font-size: 12px; color: #eafff0; font-weight: 600; }
-    .update-link { font-size: 12px; color: #ffe28a; text-decoration: none; font-weight: 700; }
-    .update-link:hover { color: #fff; text-decoration: underline; }
+    .update-actions { display: flex; gap: 7px; }
+    .update-action { flex: 1; border: 1px solid rgba(255,255,255,.25); border-radius: 6px; padding: 6px; color: #fff; background: rgba(255,255,255,.12); font-size: 11px; font-weight: 700; cursor: pointer; }
+    .update-action.primary { color: #17351d; background: #ffe28a; }
+    .update-action:hover { filter: brightness(1.12); }
     .row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 14px; }
     .switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -65,7 +67,10 @@
   <h1>4:20 Tracker</h1>
   <div class="update-banner" id="updateBanner" style="display:none">
     <div class="update-text">Update available — v<span id="updateVersion"></span></div>
-    <a href="#" id="updateLink" class="update-link">Download</a>
+    <div class="update-actions">
+      <button type="button" id="updateLink" class="update-action primary">Update now</button>
+      <button type="button" id="updateLater" class="update-action">Later</button>
+    </div>
   </div>
   <div class="next" id="next">Checking…</div>
   <div class="row">

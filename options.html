@@ -131,6 +131,13 @@
       text-decoration: none; cursor: pointer; transition: background 0.18s ease;
     }
     .update-btn:hover { background: #fff; }
+    .update-later {
+      display: block; width: 100%; margin-top: 8px; padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,0.3); border-radius: 7px;
+      background: transparent; color: #eafff0; font-size: 12px;
+      font-weight: 700; cursor: pointer;
+    }
+    .update-later:hover { background: rgba(255,255,255,0.12); }
     .footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 24px; }
     .card-heading {
       font-size: 15px; font-weight: 700; color: var(--gold);
@@ -192,7 +199,10 @@
         <div class="update-title">Update available — v<span id="updateVersion"></span></div>
         <div class="update-sub">You're on v<span id="currentVersion"></span>. Download the new version, unzip, and reload the extension.</div>
       </div>
-      <a href="#" id="updateLink" class="update-btn">Download</a>
+      <div>
+        <a href="#" id="updateLink" class="update-btn">Update now</a>
+        <button type="button" id="updateLater" class="update-later">Later</button>
+      </div>
     </div>
 
     <div class="card">

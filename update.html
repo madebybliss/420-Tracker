@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update 4:20 Tracker</title>
+  <style>
+    :root { color-scheme: dark; --green:#76de82; --gold:#ffe28a; --card:#17271b; --muted:#aac5af; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; padding:40px 20px; background:radial-gradient(circle at 30% 0%,#24462c,#0d1710 65%); color:#eafff0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+    main { width:min(680px,100%); margin:auto; }
+    header { text-align:center; margin-bottom:24px; }
+    header img { width:58px; height:58px; }
+    h1 { margin:8px 0; color:var(--gold); font-size:28px; }
+    .version { color:var(--muted); }
+    .card { background:rgba(23,39,27,.96); border:1px solid rgba(118,222,130,.3); border-radius:16px; padding:24px; box-shadow:0 18px 55px rgba(0,0,0,.35); }
+    .required { display:none; margin-bottom:18px; padding:11px 13px; border-radius:9px; background:#713737; border:1px solid #d98989; font-weight:700; }
+    ol { margin:20px 0; padding-left:24px; }
+    li { margin:0 0 14px; line-height:1.55; }
+    code { padding:2px 6px; border-radius:5px; background:#0b130d; color:var(--gold); }
+    .warning { padding:12px 14px; border-radius:9px; background:rgba(255,226,138,.08); border:1px solid rgba(255,226,138,.3); color:#f7edc2; line-height:1.45; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:22px; }
+    button { flex:1; min-width:180px; padding:12px 16px; border-radius:9px; border:1px solid rgba(255,255,255,.22); cursor:pointer; font-size:14px; font-weight:750; background:rgba(255,255,255,.08); color:#eafff0; }
+    button.primary { border:none; background:linear-gradient(135deg,#3b9a47,#247330); }
+    button:hover { filter:brightness(1.12); }
+    #status { min-height:20px; margin-top:12px; color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <img src="icons/leaf.svg" alt="">
+      <h1>Update 4:20 Tracker</h1>
+      <div class="version">Installed: v<span id="currentVersion">…</span> · Available: v<span id="latestVersion">…</span></div>
+    </header>
+    <section class="card">
+      <div class="required" id="required">This is a required update. Please install it before continuing to use the tracker.</div>
+      <div class="warning"><strong>Keep this page open.</strong> The extension is installed unpacked, so Chrome and Brave require a short manual update.</div>
+      <ol>
+        <li>Press <strong>Download update</strong> below and wait for the ZIP file to finish downloading.</li>
+        <li>Unzip the download. Copy the files inside the new <code>420-tracker</code> folder over the files in your existing extension folder.</li>
+        <li>Open <code id="extensionsUrl">chrome://extensions</code> in a new tab.</li>
+        <li>Find <strong>4:20 Tracker</strong> and press its circular <strong>Reload</strong> button.</li>
+        <li>Return to StreamYard and run <strong>Test Popup</strong> once to confirm the update.</li>
+      </ol>
+      <div class="actions">
+        <button type="button" class="primary" id="download">Download update</button>
+        <button type="button" id="extensions">Open extensions page</button>
+      </div>
+      <div id="status" role="status"></div>
+    </section>
+  </main>
+  <script src="update.js"></script>
+</body>
+</html>

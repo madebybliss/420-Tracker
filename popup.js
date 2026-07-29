@@ -18,13 +18,21 @@ async function load() {
 async function refreshUpdateBanner() {
   try {
     const info = await chrome.runtime.sendMessage({ type: 'GET_UPDATE_STATUS' });
-    if (info && info.hasUpdate) {
+    if (info && info.hasUpdate && !info.snoozed) {
       $('updateVersion').textContent = info.latestVersion;
+      $('updateLater').style.display = info.forceUpdate ? 'none' : '';
+      $('updateBanner').querySelector('.update-text').firstChild.textContent = info.forceUpdate
+        ? 'Required update — v'
+        : 'Update available — v';
       $('updateBanner').style.display = 'flex';
       $('updateLink').onclick = (e) => {
         e.preventDefault();
-        chrome.tabs.create({ url: info.downloadUrl });
+        chrome.tabs.create({ url: chrome.runtime.getURL('update.html') });
         window.close();
+      };
+      $('updateLater').onclick = async () => {
+        await chrome.runtime.sendMessage({ type: 'UPDATE_LATER' });
+        $('updateBanner').style.display = 'none';
       };
     } else {
       $('updateBanner').style.display = 'none';

@@ -70,6 +70,25 @@ Click **![leaf](icons/leaf.svg) Test Popup** to preview without waiting for the 
 - If the active tab can't be injected (e.g. `chrome://` pages or a fresh tab), it falls back to a standard Chrome notification.
 - Settings are stored in `chrome.storage.sync` and persist across browser restarts.
 
+### Publishing updates
+
+The extension checks GitHub's **latest published release** when the browser
+starts and once per day. A commit or tag by itself is not an update: publish a
+GitHub Release whose tag is higher than the version in `manifest.json`, and
+attach the install ZIP as the first release asset.
+
+Users receive an **Update now / Later** notification and see the same choices
+in the toolbar and settings pages. **Later** snoozes the prompt for 24 hours.
+For an urgent release, put `[force-update]` anywhere in the release notes. That
+removes the Later choice and makes the notification persistent and recurring.
+
+Because this project is installed unpacked, Chrome and Brave do not allow it to
+overwrite its own files. **Update now** opens a guided update page with the
+download and exact Chrome/Brave instructions; the user must unzip it into the
+extension folder and reload the extension from the browser's extensions page.
+Publishing through the Chrome Web Store is required for unattended updates on
+normal Windows and macOS installations.
+
 ---
 
 ## Project structure
@@ -251,5 +270,3 @@ Stay chill. ![leaf](icons/leaf.svg)
 
 
 Feel Free To Join The [Discord](https://discord.gg/6aWfHfpbG)
-
-

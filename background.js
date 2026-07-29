@@ -331,8 +331,12 @@ async function checkForUpdate() {
     const remoteTag = (data.tag_name || '').replace(/^v/, ''); // 'v1.3.6' -> '1.3.6'
     const localVersion = chrome.runtime.getManifest().version;
     const hasUpdate = remoteTag && compareVersions(remoteTag, localVersion) > 0;
+    // Put [force-update] anywhere in the GitHub release notes when an update
+    // must not offer the normal "Later" option.
+    const forceUpdate = hasUpdate && /\[force-update\]/i.test(data.body || '');
     const result = {
       hasUpdate,
+      forceUpdate,
       latestVersion: remoteTag,
       currentVersion: localVersion,
       downloadUrl: (data.assets && data.assets[0] && data.assets[0].browser_download_url)
@@ -342,6 +346,7 @@ async function checkForUpdate() {
       checkedAt: Date.now(),
     };
     await chrome.storage.local.set({ updateInfo: result });
+    if (hasUpdate) await showUpdateNotification(result);
     console.log('[4:20 Tracker] Update check:', hasUpdate
       ? `v${localVersion} -> v${remoteTag} available`
       : `up to date (v${localVersion})`);
@@ -350,6 +355,60 @@ async function checkForUpdate() {
     console.log('[4:20 Tracker] Update check failed:', e && e.message);
   }
 }
+
+const UPDATE_NOTIFICATION_ID = 'four20-update-available';
+const UPDATE_REMINDER_MS = 24 * 60 * 60 * 1000;
+
+async function showUpdateNotification(info) {
+  const { updatePromptState = {} } = await chrome.storage.local.get('updatePromptState');
+  const sameVersion = updatePromptState.version === info.latestVersion;
+  const snoozed = sameVersion && updatePromptState.snoozedUntil > Date.now();
+  const alreadyPrompted = sameVersion && updatePromptState.prompted && !info.forceUpdate;
+  if (snoozed || alreadyPrompted) return;
+
+  const options = {
+    type: 'basic',
+    iconUrl: 'icons/icon128.png',
+    title: info.forceUpdate ? '4:20 Tracker update required' : '4:20 Tracker update available',
+    message: `Version ${info.latestVersion} is ready. Download it, unzip it, then reload the extension.`,
+    priority: info.forceUpdate ? 2 : 1,
+    requireInteraction: Boolean(info.forceUpdate),
+    buttons: info.forceUpdate
+      ? [{ title: 'Update now' }]
+      : [{ title: 'Update now' }, { title: 'Later' }],
+  };
+  await chrome.notifications.create(UPDATE_NOTIFICATION_ID, options);
+  await chrome.storage.local.set({
+    updatePromptState: { version: info.latestVersion, prompted: true, snoozedUntil: 0 },
+  });
+}
+
+async function openUpdatePage() {
+  await chrome.tabs.create({ url: chrome.runtime.getURL('update.html') });
+}
+
+async function snoozeUpdate() {
+  const { updateInfo } = await chrome.storage.local.get('updateInfo');
+  if (!updateInfo || updateInfo.forceUpdate) return;
+  await chrome.storage.local.set({
+    updatePromptState: {
+      version: updateInfo.latestVersion,
+      prompted: false,
+      snoozedUntil: Date.now() + UPDATE_REMINDER_MS,
+    },
+  });
+  await chrome.notifications.clear(UPDATE_NOTIFICATION_ID);
+}
+
+chrome.notifications.onClicked.addListener((notificationId) => {
+  if (notificationId === UPDATE_NOTIFICATION_ID) openUpdatePage();
+});
+
+chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
+  if (notificationId !== UPDATE_NOTIFICATION_ID) return;
+  if (buttonIndex === 0) openUpdatePage();
+  else if (buttonIndex === 1) snoozeUpdate();
+});
 
 // Returns >0 if a is newer than b, 0 if equal, <0 if a is older.
 function compareVersions(a, b) {
@@ -404,9 +463,18 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     // Return cached update info immediately; optionally refresh first.
     (async () => {
       if (msg.refresh) await checkForUpdate();
-      const { updateInfo } = await chrome.storage.local.get('updateInfo');
-      safeRespond(updateInfo || { hasUpdate: false, currentVersion: chrome.runtime.getManifest().version });
+      const { updateInfo, updatePromptState = {} } = await chrome.storage.local.get(['updateInfo', 'updatePromptState']);
+      const snoozed = updateInfo && !updateInfo.forceUpdate
+        && updatePromptState.version === updateInfo.latestVersion
+        && updatePromptState.snoozedUntil > Date.now();
+      safeRespond(updateInfo
+        ? { ...updateInfo, snoozed }
+        : { hasUpdate: false, currentVersion: chrome.runtime.getManifest().version });
     })();
+    return true;
+  }
+  if (msg.type === 'UPDATE_LATER') {
+    snoozeUpdate().then(() => safeRespond({ ok: true }));
     return true;
   }
   if (msg.type === 'FIRE_REAL_420') {
