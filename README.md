@@ -40,6 +40,15 @@ and instructions for Chrome / Brave / Edge: see [`INSTALL.md`](./INSTALL.md).**
 4. Select the `420-tracker` folder (the one with `manifest.json` inside).
 5. Pin the ![leaf](icons/leaf.svg) icon to your toolbar for quick access.
 
+### Updating an existing installation
+
+When the extension reports an update, choose **Update now** to open the guided
+update page. Download and extract the ZIP, copy its files over the original
+extension folder, then reload 4:20 Tracker from your browser's extensions page.
+Do not remove and reinstall it. See the complete
+**[update instructions](./INSTALL.md#updating-to-a-new-version)** for Chrome,
+Brave, Edge, version verification, and the automatic-trigger test.
+
 > Works in Chrome, Edge, Brave, and any Chromium browser that supports Manifest V3.
 
 ---

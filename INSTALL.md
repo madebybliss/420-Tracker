@@ -204,15 +204,47 @@ automatically throughout the day.
 
 ## Updating to a new version
 
-When Bliss sends you updated files:
+The extension checks the latest published GitHub release when the browser
+starts and once per day. When an update is available, choose **Update now** in
+the notification, toolbar popup, or settings page. You can choose **Later** to
+be reminded again after 24 hours unless the release is marked as required.
 
-1. **Replace** the old files in the `420-tracker/` folder with the new ones
- (keep the same folder name and location).
-2. Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`).
-3. Find **![leaf](icons/leaf.svg) 4:20 Tracker** and click the ** reload** arrow on its card.
-4. Done — the new version is now live.
+Because 4:20 Tracker is installed as an unpacked extension, Chrome, Brave, and
+Edge will not replace its files automatically. Follow these steps:
 
-> You do **not** need to remove and re-add the extension. Just reload.
+1. Click **Update now**, then click **Download update** on the instructions
+ page. Alternatively, download `420-tracker.zip` from the latest GitHub Release.
+2. Wait for the ZIP to finish downloading, then **unzip/extract it**. Open the
+ extracted `420-tracker` folder and confirm that `manifest.json` is directly
+ inside it.
+3. Find the **original `420-tracker` folder** that the browser is already
+ using. This is the folder you selected when you first clicked **Load unpacked**.
+4. Copy everything from the newly extracted `420-tracker` folder into that
+ original folder. Choose **Replace/Overwrite** when your computer asks about
+ files with the same names.
+5. Open the extensions page for your browser:
+   - Chrome: `chrome://extensions`
+   - Brave: `brave://extensions`
+   - Edge: `edge://extensions`
+6. Find **![leaf](icons/leaf.svg) 4:20 Tracker** and click its circular
+ **Reload** button.
+7. Refresh any webpage that was already open so it receives the newest page
+ heartbeat code.
+8. Open the extension and click **Test automatic trigger**. Keep a normal
+ webpage active; the popup should appear when the next clock minute begins.
+
+### Confirm the installed version
+
+On the browser's extensions page, open **Details** for 4:20 Tracker and check
+that the displayed version matches the GitHub Release. If the old version is
+still shown, the new files were probably copied into a different folder.
+
+> **Do not remove the extension or load the downloaded folder as a second
+> extension.** Replace the files in the original folder and press Reload. This
+> preserves the existing extension identity and settings.
+
+> **Do not select the ZIP itself.** Browsers can only load the extracted folder
+> containing `manifest.json`.
 
 ---
 
