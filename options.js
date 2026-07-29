@@ -9,6 +9,7 @@ const DEFAULTS = {
   position: 'top-right',
   size: 'medium',
   enabled: true,
+  testEvery10Min: false,
   brandChannel: '',
   brandLink: '',
   brandTagline: '',
@@ -28,13 +29,40 @@ async function load() {
   $('size').value            = s.size;
   $('durationSec').value     = s.durationSec;
   $('soundEnabled').checked  = s.soundEnabled;
+  $('testEvery10Min').checked = s.testEvery10Min;
   $('brandChannel').value    = s.brandChannel;
   $('brandLink').value       = s.brandLink;
   $('brandTagline').value    = s.brandTagline;
   $('brandLogoUrl').value    = s.brandLogoUrl;
   updateLogoPreview(s.brandLogoUrl);
+  refreshTestCountdown();
   refreshStatus();
   refreshUpdateBanner();
+}
+
+async function refreshTestCountdown() {
+  const el = $('testCountdown');
+  if (!$('testEvery10Min').checked) {
+    el.style.display = 'none';
+    return;
+  }
+
+  el.style.display = 'block';
+  const { recurringTestNextAt } = await chrome.storage.local.get('recurringTestNextAt');
+  if (!Number.isFinite(recurringTestNextAt)) {
+    el.textContent = 'Scheduling the first test popup…';
+    return;
+  }
+
+  const secondsLeft = Math.max(0, Math.ceil((recurringTestNextAt - Date.now()) / 1000));
+  if (secondsLeft === 0) {
+    el.textContent = 'Test popup due — waiting for an active normal webpage…';
+    return;
+  }
+
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = String(secondsLeft % 60).padStart(2, '0');
+  el.textContent = `Next test popup in ${minutes}:${seconds}`;
 }
 
 // Show the update banner if a newer version is available on GitHub.
@@ -71,8 +99,9 @@ async function save() {
     timezoneMode:  $('timezoneMode').value,
     position:      $('position').value,
     size:          $('size').value,
-    durationSec:   Math.max(1, parseInt($('durationSec').value, 10) || 6),
+    durationSec:   Math.min(120, Math.max(1, parseInt($('durationSec').value, 10) || 6)),
     soundEnabled:  $('soundEnabled').checked,
+    testEvery10Min: $('testEvery10Min').checked,
     brandChannel:  $('brandChannel').value.trim(),
     brandLink:     $('brandLink').value.trim(),
     brandTagline:  $('brandTagline').value.trim(),
@@ -119,8 +148,16 @@ async function refreshStatus() {
 }
 
 // Wire up inputs — save on any change.
-['enabled','timezoneMode','position','size','durationSec','soundEnabled','brandChannel','brandLink','brandTagline'].forEach((id) => {
-  $(id).addEventListener('change', () => { save(); refreshStatus(); });
+['enabled','timezoneMode','position','size','durationSec','soundEnabled','testEvery10Min','brandChannel','brandLink','brandTagline'].forEach((id) => {
+  $(id).addEventListener('change', async () => {
+    await save();
+    refreshStatus();
+    if (id === 'testEvery10Min') refreshTestCountdown();
+  });
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === 'local' && changes.recurringTestNextAt) refreshTestCountdown();
 });
 // Branding text fields also save on `input` so typing persists immediately.
 ['brandChannel','brandLink','brandTagline'].forEach((id) => {
@@ -190,3 +227,4 @@ $('resetCacheBtn').addEventListener('click', async () => {
 
 load();
 setInterval(refreshStatus, 30_000); // keep countdown fresh
+setInterval(refreshTestCountdown, 1_000);

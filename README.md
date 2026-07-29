@@ -2,7 +2,9 @@
 
 # 4:20 Tracker — Global Cannabis Time
 
-Current version: **1.4.7**
+Current version: **1.4.8**
+
+See **[CHANGELOG.md](./CHANGELOG.md)** for release history.
 
 A Chromium extension that pops up a clean, animated, cannabis-themed notification
 the moment it hits **4:20 PM** in any major timezone around the world.
@@ -21,12 +23,13 @@ extension announce 4:20 rolling across the globe throughout the day.
 - **Works over any active webpage** — StreamYard, YouTube, Twitch, VDO.Ninja, social sites, and other normal `http://` or `https://` tabs.
 - **Customisable look** — pick popup **position** (6 corners/edges) and **size** (S/M/L). The popup slides in naturally from its chosen position.
 - **Optional chime** — soft pleasant sound when the popup appears (toggle on/off).
-- **Configurable duration** — auto-dismiss after 1–120 seconds.
+- **Configurable duration** — remains fully visible for 1–120 seconds after its entrance animation, then dismisses.
 - **Click to dismiss** — click anywhere on the popup (or the close button) to close early.
 - **Cannabis theme** — green/gold glass card with shimmer text, custom cannabis-leaf branding throughout.
 - **Channel branding** — streamers can add their channel name, link, tagline, and logo to every popup.
 - **Toolbar popup** — shows the next upcoming 4:20 + countdown.
 - **Built-in diagnostics** — preview immediately, test the automatic scheduler at the next minute, simulate a real event, or reset the dedup cache.
+- **10-minute test mode** — switch on recurring test popups that follow the active webpage until switched off, with a live countdown in Settings.
 - **Full settings page** — tracker, timezone, display, sound, testing, and channel-branding controls.
 - **Guided updates** — detects newer GitHub Releases, offers **Update now / Later**, and opens step-by-step Chrome/Brave instructions.
 - **No spam** — each tracked city fires at most once per local day.
@@ -71,6 +74,7 @@ Open via the toolbar popup → ** Full settings**, or right-click the icon → O
 | Popup size         | Small, Medium, or Large                                     |
 | Display duration   | Seconds before auto-dismiss (1–120)                         |
 | Play chime         | Soft sound on popup                                          |
+| 10-minute test mode | Fires a recurring test popup in the active webpage every 10 minutes |
 | Channel branding   | Optional: channel name, link, tagline, logo URL shown on every popup |
 
 ### Testing
@@ -82,6 +86,9 @@ Open via the toolbar popup → ** Full settings**, or right-click the icon → O
  the complete heartbeat → service worker → active-tab delivery path is working.
 - The settings page also includes **Fire real 4:20 now** and **Reset fired
  cache** diagnostic controls.
+- **10-minute test mode** remains active after Settings is closed and across
+ browser restarts. Its first popup is due 10 minutes after enabling it; each
+ successful popup starts the next 10-minute interval. Switch it off to cancel.
 
 ---
 
@@ -118,6 +125,9 @@ normal Windows and macOS installations.
 
 ```
 420-tracker/
+├── CHANGELOG.md # Version history
+├── INSTALL.md # Installation and manual-update guide
+├── README.md # Features, settings, testing, and streaming guide
 ├── manifest.json # MV3 manifest
 ├── background.js # Service worker: 4:20 detection + alarms
 ├── content.js # Injects & animates the popup in the page

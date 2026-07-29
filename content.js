@@ -179,20 +179,41 @@
     });
     host.appendChild(overlay);
 
-    // Trigger entrance animation on next frame so the transition runs.
-    requestAnimationFrame(() => overlay.classList.add('f420-visible'));
-
     if (soundEnabled) playChime();
 
     let hideTimer = null;
+    let entranceFallback = null;
+    let dismissed = false;
     const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
       if (hideTimer) clearTimeout(hideTimer);
+      if (entranceFallback) clearTimeout(entranceFallback);
       overlay.classList.remove('f420-visible');
       overlay.classList.add('f420-leaving');
       overlay.addEventListener('animationend', () => overlay.remove(), { once: true });
     };
 
-    hideTimer = setTimeout(dismiss, Math.max(1, durationSec) * 1000);
+    const parsedDuration = Number(durationSec);
+    const visibleDurationSec = Number.isFinite(parsedDuration)
+      ? Math.min(120, Math.max(1, parsedDuration))
+      : 6;
+    const startVisibleTimer = () => {
+      if (dismissed || hideTimer) return;
+      if (entranceFallback) clearTimeout(entranceFallback);
+      hideTimer = setTimeout(dismiss, visibleDurationSec * 1000);
+    };
+
+    // The configured duration means fully visible time. Start counting only
+    // after the popup's entrance animation, not while it is still sliding in.
+    overlay.addEventListener('animationend', (event) => {
+      if (event.target === overlay && overlay.classList.contains('f420-visible')) {
+        startVisibleTimer();
+      }
+    });
+    requestAnimationFrame(() => overlay.classList.add('f420-visible'));
+    // Safety for pages/browsers that suppress animationend.
+    entranceFallback = setTimeout(startVisibleTimer, 750);
 
     // Dismiss button closes; clicking anywhere else on the popup also dismisses.
     dismissBtn.addEventListener('click', (e) => { e.stopPropagation(); dismiss(); });

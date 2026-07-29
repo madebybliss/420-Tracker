@@ -13,6 +13,7 @@ const DEFAULT_SETTINGS = {
   bgColor: '#1a3a24',         // popup background colour
   textColor: '#eafff0',       // popup text colour
   enabled: true,              // master on/off
+  testEvery10Min: false,      // recurring test popup for stream/browser checks
   // Streamer branding (optional). Shown on every popup when brandChannel is set.
   brandChannel: '',           // e.g. "Bliss TV"
   brandLink: '',              // e.g. "https://youtube.com/@bliss"
@@ -119,6 +120,24 @@ async function tick() {
     } else if (now >= scheduledTestAt + 60_000) {
       await chrome.storage.local.remove('scheduledTestAt');
     }
+  }
+
+  // Optional recurring test mode. Its next due time is stored locally so it
+  // keeps running after the settings page closes and across browser restarts.
+  const { recurringTestNextAt } = await chrome.storage.local.get('recurringTestNextAt');
+  if (settings.testEvery10Min) {
+    if (!Number.isFinite(recurringTestNextAt)) {
+      await chrome.storage.local.set({ recurringTestNextAt: now + 10 * 60_000 });
+    } else if (now >= recurringTestNextAt) {
+      // Use a non-UTC marker so this test stays silent on protected browser
+      // pages instead of opening a new tab. It retries on the next normal tab.
+      const shown = await firePopup({ city: '10-Minute Test Mode', tz: 'RECURRING_TEST' }, settings);
+      if (shown) {
+        await chrome.storage.local.set({ recurringTestNextAt: Date.now() + 10 * 60_000 });
+      }
+    }
+  } else if (Number.isFinite(recurringTestNextAt)) {
+    await chrome.storage.local.remove('recurringTestNextAt');
   }
 
   if (!settings.enabled) return;
@@ -332,6 +351,17 @@ chrome.runtime.onStartup.addListener(async () => {
 // Alarms normally persist, but Chrome documents that they may be cleared on
 // restart. Also repair them whenever this service worker is loaded.
 ensureAlarms().catch((e) => console.warn('[4:20 Tracker] Alarm setup failed:', e && e.message));
+
+// Start a fresh ten-minute interval when the switch is enabled, and cancel it
+// immediately when disabled. This works even after the settings tab closes.
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== 'sync' || !changes.testEvery10Min) return;
+  if (changes.testEvery10Min.newValue) {
+    chrome.storage.local.set({ recurringTestNextAt: Date.now() + 10 * 60_000 });
+  } else {
+    chrome.storage.local.remove('recurringTestNextAt');
+  }
+});
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'tick') requestTick();
