@@ -2,7 +2,9 @@
 
 # 4:20 Tracker — Global Cannabis Time
 
-A Chrome extension that pops up a clean, animated, cannabis-themed notification
+Current version: **1.4.7**
+
+A Chromium extension that pops up a clean, animated, cannabis-themed notification
 the moment it hits **4:20 PM** in any major timezone around the world.
 
 > *"Hey! It's 4:20 in London!"* → slides in, chimes, slides out.
@@ -14,16 +16,20 @@ extension announce 4:20 rolling across the globe throughout the day.
 
 ## Features
 
-- **Global tracking** — fires for 38 major timezones (or 16 iconic cities — your choice).
-- **Customisable look** — pick popup **position** (6 corners/edges), **size** (S/M/L), and **colours** (background + text). The popup slides in naturally from its chosen corner.
+- **Global tracking** — fires for 39 cities across major timezones (or 16 iconic cities — your choice).
+- **Exact-minute alerts** — redundant scheduling checks during 4:20, with no misleading late alert at 4:21 or afterward.
+- **Works over any active webpage** — StreamYard, YouTube, Twitch, VDO.Ninja, social sites, and other normal `http://` or `https://` tabs.
+- **Customisable look** — pick popup **position** (6 corners/edges) and **size** (S/M/L). The popup slides in naturally from its chosen position.
 - **Optional chime** — soft pleasant sound when the popup appears (toggle on/off).
-- **Configurable duration** — auto-dismiss after any number of seconds.
+- **Configurable duration** — auto-dismiss after 1–120 seconds.
 - **Click to dismiss** — click anywhere on the popup (or the close button) to close early.
 - **Cannabis theme** — green/gold glass card with shimmer text, custom cannabis-leaf branding throughout.
 - **Channel branding** — streamers can add their channel name, link, tagline, and logo to every popup.
 - **Toolbar popup** — shows the next upcoming 4:20 + countdown.
-- **Full settings page** — toggle every option.
-- **No spam** — each timezone fires exactly once per day.
+- **Built-in diagnostics** — preview immediately, test the automatic scheduler at the next minute, simulate a real event, or reset the dedup cache.
+- **Full settings page** — tracker, timezone, display, sound, testing, and channel-branding controls.
+- **Guided updates** — detects newer GitHub Releases, offers **Update now / Later**, and opens step-by-step Chrome/Brave instructions.
+- **No spam** — each tracked city fires at most once per local day.
 - **Accessible** — respects `prefers-reduced-motion`; uses `role="alert"`.
 
 ---
@@ -67,7 +73,15 @@ Open via the toolbar popup → ** Full settings**, or right-click the icon → O
 | Play chime         | Soft sound on popup                                          |
 | Channel branding   | Optional: channel name, link, tagline, logo URL shown on every popup |
 
-Click **![leaf](icons/leaf.svg) Test Popup** to preview without waiting for the real 4:20.
+### Testing
+
+- **Test Popup** renders a preview immediately. This confirms the appearance,
+ position, branding, and chime, but bypasses automatic scheduling.
+- **Test automatic trigger** arms the real scheduler for the beginning of the
+ next clock minute. Keep any normal webpage active; if the popup appears there,
+ the complete heartbeat → service worker → active-tab delivery path is working.
+- The settings page also includes **Fire real 4:20 now** and **Reset fired
+ cache** diagnostic controls.
 
 ---
 
@@ -76,7 +90,7 @@ Click **![leaf](icons/leaf.svg) Test Popup** to preview without waiting for the 
 - A background service worker checks on aligned 30-second boundaries, reinforced by a 15-second heartbeat from the visible webpage.
 - On each tick it checks the local time in every tracked timezone via `Intl.DateTimeFormat`.
 - It injects the popup only while a zone's clock reads **16:20** and records the firing so it won't repeat. It never announces late at 16:21 or afterward.
-- If the active tab can't be injected (e.g. `chrome://` pages or a fresh tab), it falls back to a standard Chrome notification.
+- Real alerts appear in the active normal webpage. Chromium does not allow page overlays on protected pages such as `chrome://`, `brave://`, the Web Store, or some New Tab/PDF pages, so real alerts stay silent on those pages.
 - Settings are stored in `chrome.storage.sync` and persist across browser restarts.
 
 ### Publishing updates
@@ -110,11 +124,13 @@ normal Windows and macOS installations.
 ├── popup.css # Popup styles + all entrance animations
 ├── popup.html / .js # Toolbar dropdown (status + quick toggle)
 ├── options.html / .js # Full settings page
+├── update.html / .js # Guided manual-update instructions
 ├── sounds/
 │ ├── chime.mp3 # Generated pleasant 3-note chime
 │ └── chime.ogg # OGG fallback
 └── icons/
  ├── icon16/32/48/128.png
+ ├── default-logo.png
  └── leaf.svg
 ```
 
@@ -138,38 +154,14 @@ for the `"Hey! It's 4:20"` / `"in {city}"` strings.
 
 ## Showing the popup on stream (OBS)
 
-The popup lives inside a browser tab, so to get it on stream you point OBS at
-that tab. **Two ways to do it — pick whichever fits your setup.**
+The popup lives inside the active tab of the real Chrome/Brave/Edge window
+where the extension is installed. Capture that browser window in OBS.
 
-### Option A — Browser Source (cleanest, recommended)
+> **OBS Browser Source does not load your installed browser extensions.**
+> Pasting the same webpage URL into an OBS Browser Source will not make 4:20
+> Tracker appear there. Use Window Capture or Display Capture instead.
 
-A Browser Source is a dedicated hidden webpage that OBS controls. The popup
-appears on a transparent background, so it floats over your stream cleanly.
-
-1. **Set up the source page.** Open a fresh browser tab and go to any normal
- website (e.g. `https://example.com`). Keep this tab open — it's where the
- popup will appear.
-2. In **OBS**, make sure the **Browser Source** feature is available (it ships
- with OBS by default — no plugin needed).
-3. In your OBS scene, under **Sources**, click the **➕** button → **Browser**.
-4. Configure it:
- - **URL:** paste the URL of the tab from step 1 (e.g. `https://example.com`)
- - **Width:** `1920` (or your stream width)
- - **Height:** `1080` (or your stream height)
- - Tick **"Shutdown source when not visible"** — *leave it UNCHECKED* so
- the page stays loaded and popups can fire anytime
- - Click **OK**
-5. Resize/position the Browser Source as needed. Since the page background
- isn't transparent by default, you may want to either:
- - Use a website with a dark background, **or**
- - Add an **Image Mask/Blend** filter to the Browser Source, **or**
- - Switch to **Option B** below for true transparency.
-
-> **Sound on stream:** The chime plays in the *browser*, not OBS. To capture
-> it, either route the tab's audio via **Application Audio Capture** (Windows 11
-> / recent OBS) pointed at Chrome/Brave, or use **Option B**.
-
-### Option B — Window / Display Capture (simplest, captures everything)
+### Window / Display Capture
 
 1. Open a browser window with a normal webpage as the active tab.
 2. In OBS → **Sources → ➕ → Window Capture** (Mac: **macOS Window Capture**)
@@ -178,18 +170,18 @@ appears on a transparent background, so it floats over your stream cleanly.
 4. Crop/resize so only the popup area shows, or layer it over a transparent
  background scene.
 
-This captures **video + the chime audio** in one shot, but you'll see the rest
-of the browser too unless you crop carefully.
+You will see the rest of the browser unless you crop carefully. To include the
+chime, add OBS **Application Audio Capture** for Chrome/Brave/Edge or use your
+normal desktop-audio source; Window Capture itself may not capture audio.
 
 ### Tips for a clean stream overlay
 
 - **Pin a "dummy" tab** (e.g. a blank dark page) as your active tab while
  streaming so popups always land somewhere predictable.
-- Test with **Test Popup** in settings *before* going live — confirm it
- appears on stream exactly where you want.
+- Use **Test Popup** to confirm placement, then **Test automatic trigger** to
+ verify that the real scheduler appears on the captured webpage.
 - The popup auto-dismisses after your configured duration, so you don't need
  to manage it manually mid-stream.
-- Set **Animation style → Random** for variety across the day's 4:20s.
 - Remember: popups **won't** fire on `chrome://` pages or the new-tab page —
  always have a real website as your active tab.
 
@@ -214,9 +206,8 @@ This is the easiest if **you** are the host and the popup is for your own view.
 3. Make sure that tab is your **active tab** when you want popups to appear.
 4. When 4:20 hits somewhere, the popup slides in over the VDO.Ninja view.
 
-> Warning: The popup only fires in the **active** tab. If you switch away from the
-> VDO.Ninja tab, popups pause until you come back. For always-on behaviour,
-> use Approach 2.
+> The popup targets whichever normal webpage is active. If you switch away
+> from VDO.Ninja, the alert will appear on the new active webpage instead.
 
 ### Approach 2 — Add VDO.Ninja as an OBS Browser Source (best for streams)
 
@@ -237,13 +228,14 @@ overlays on top via OBS.
  Browser Sources** — but note: *OBS's built-in Browser Source has its own
  embedded Chromium that does **not** run your installed extensions.*
 
- So for the popup to appear on the VDO.Ninja OBS feed, you have two options:
+ So for the popup to appear on the VDO.Ninja feed, you have two options:
  - **(a)** Run VDO.Ninja in your **real Chrome/Brave window** (with the
  extension installed) and capture that window with **Window Capture**
  in OBS — the popup will be captured along with it.
  - **(b)** Keep VDO.Ninja as an OBS Browser Source (clean, transparent),
- and add the 4:20 popup as a **separate** overlay using Option A or B
- from the OBS section above.
+ and capture a separate real browser window containing the popup using
+ **Window Capture**. Crop that capture to the configured popup area and layer
+ it above the VDO.Ninja source.
 
 > **Key takeaway:** OBS's Browser Sources run in an isolated embedded
 > browser — they ignore your installed extensions. To get the extension's
