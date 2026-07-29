@@ -381,12 +381,14 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return true;
   }
   if (msg.type === 'FIRE_REAL_420') {
-    // Simulate a genuine 4:20 announcement — uses the real firePopup path
-    // (so it respects the silent-when-no-tab rule and opens example.com if
-    // needed) but with a real timezone so it's not treated as a test.
+    // Manual "fire real 4:20 now" test button. Uses the real firePopup path
+    // but marks the zone as a test (tz 'UTC') so the silent-when-no-tab rule
+    // doesn't swallow it — pressing a test button should ALWAYS show a popup,
+    // opening example.com if the active tab is restricted (e.g. this settings
+    // page). The city shown is whatever was requested (default 'London').
     (async () => {
       const settings = await getSettings();
-      const zone = { city: msg.city || 'London', tz: 'Europe/London' };
+      const zone = { city: msg.city || 'London', tz: 'UTC' };
       await firePopup(zone, settings);
       safeRespond({ ok: true });
     })();
