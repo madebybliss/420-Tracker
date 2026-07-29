@@ -123,6 +123,7 @@ async function tick() {
     else dirty = true;
   }
 
+  let didFire = false;
   for (const zone of zones) {
     const { hour, minute } = getZoneTime(zone.tz);
     if (hour !== 16 || minute !== 20) continue; // not 4:20 here
@@ -131,13 +132,18 @@ async function tick() {
     const key = `${dateStr}|${zone.city}`;
     if (cleaned[key]) continue; // already announced this 4:20
 
-    // Fire!
-    cleaned[key] = { date: dateStr, firedAt: Date.now() };
-    await firePopup(zone, settings);
+    // Fire! Only mark as fired if the popup actually showed — otherwise we
+    // retry on the next tick (the user may switch to a webpage mid-4:20).
+    const shown = await firePopup(zone, settings);
+    if (shown) {
+      cleaned[key] = { date: dateStr, firedAt: Date.now() };
+      didFire = true;
+    }
   }
 
-  await chrome.storage.local.set({ firedToday: cleaned });
-  if (dirty) await chrome.storage.local.set({ firedToday: cleaned });
+  if (didFire || dirty) {
+    await chrome.storage.local.set({ firedToday: cleaned });
+  }
 }
 
 // Poll a tab until its content script responds, or until timeoutMs elapses.
@@ -167,6 +173,8 @@ async function waitForContentScript(tabId, timeoutMs) {
 //     the user isn't even looking at a browser.
 //   - Manual test (zone.tz === 'UTC'): always try to show something by
 //     opening a fresh tab if needed.
+// Returns true if the popup was actually shown, false if it was silently
+// skipped (so the caller knows whether to mark the announcement as fired).
 async function firePopup(zone, settings) {
   const isTest = zone.tz === 'UTC';
 
@@ -195,6 +203,7 @@ async function firePopup(zone, settings) {
     const tab = await chrome.tabs.create({ url: 'https://example.com', active: true });
     const ready = await waitForContentScript(tab.id, 8000);
     if (ready) await fireInto(tab);
+    return ready;
   };
 
   try {
@@ -203,24 +212,27 @@ async function firePopup(zone, settings) {
     // No usable active tab (no tab at all, or a restricted chrome:// page).
     if (!tab || isRestrictedUrl(tab.url)) {
       if (isTest) {
-        await openAndFire();
+        return await openAndFire();
       }
       // Real announcement + no browser tab → do nothing (stay silent).
-      return;
+      return false;
     }
 
     // Try to message the active tab.
     try {
       await fireInto(tab);
+      return true;
     } catch (sendErr) {
       // Content script not present in this tab. Tests recover by opening a
       // new page; real announcements stay silent.
-      if (isTest) await openAndFire();
+      if (isTest) return await openAndFire();
+      return false;
     }
   } catch (e) {
     // Total failure — only show the fallback for manual tests, never for
     // real announcements.
     if (isTest) showFallbackNotification(zone);
+    return false;
   }
 }
 
