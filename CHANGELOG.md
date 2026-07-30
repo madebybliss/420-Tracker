@@ -2,6 +2,17 @@
 
 All notable changes to 4:20 Tracker are recorded here.
 
+## [1.4.9] - 2026-07-29
+
+### Fixed
+
+- Test controls now wait for Settings to finish saving, so a newly entered
+  display duration is used by the popup immediately.
+- Update buttons stay on one line in the toolbar popup, Settings banner, and
+  update instructions page.
+- Update layouts now stack cleanly on narrow windows without overflowing.
+- Shortened the native update notification so it displays more cleanly.
+
 ## [1.4.8] - 2026-07-29
 
 ### Added

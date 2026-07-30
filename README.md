@@ -2,7 +2,7 @@
 
 # 4:20 Tracker — Global Cannabis Time
 
-Current version: **1.4.8**
+Current version: **1.4.9**
 
 See **[CHANGELOG.md](./CHANGELOG.md)** for release history.
 

@@ -425,8 +425,10 @@ async function showUpdateNotification(info) {
   const options = {
     type: 'basic',
     iconUrl: 'icons/icon128.png',
-    title: info.forceUpdate ? '4:20 Tracker update required' : '4:20 Tracker update available',
-    message: `Version ${info.latestVersion} is ready. Download it, unzip it, then reload the extension.`,
+    title: info.forceUpdate
+      ? `Update required: v${info.latestVersion}`
+      : `Update available: v${info.latestVersion}`,
+    message: 'Open the install guide to update 4:20 Tracker.',
     priority: info.forceUpdate ? 2 : 1,
     requireInteraction: Boolean(info.forceUpdate),
     buttons: info.forceUpdate

@@ -123,11 +123,14 @@
       border: 1px solid var(--green-light); border-radius: 12px;
       padding: 14px 18px; margin-bottom: 20px;
     }
-    .update-title { font-size: 15px; font-weight: 700; color: #eafff0; }
+    .update-copy { min-width: 0; }
+    .update-title { font-size: 15px; font-weight: 700; color: #eafff0; white-space: nowrap; }
     .update-sub { font-size: 12px; color: #a9cbae; margin-top: 2px; }
+    .update-actions { flex: 0 0 auto; min-width: 112px; }
     .update-btn {
-      flex-shrink: 0; padding: 8px 16px; border-radius: 8px;
+      display: block; padding: 8px 16px; border-radius: 8px;
       background: var(--gold); color: #1a3a24; font-size: 13px; font-weight: 700;
+      line-height: 1.2; text-align: center; white-space: nowrap;
       text-decoration: none; cursor: pointer; transition: background 0.18s ease;
     }
     .update-btn:hover { background: #fff; }
@@ -138,6 +141,10 @@
       font-weight: 700; cursor: pointer;
     }
     .update-later:hover { background: rgba(255,255,255,0.12); }
+    @media (max-width: 520px) {
+      .update-banner { flex-direction: column; align-items: stretch; }
+      .update-actions { width: 100%; }
+    }
     .footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 24px; }
     .card-heading {
       font-size: 15px; font-weight: 700; color: var(--gold);
@@ -202,11 +209,11 @@
     <div class="next-up" id="nextUp">Checking next 4:20…</div>
 
     <div class="update-banner" id="updateBanner" style="display:none">
-      <div>
+      <div class="update-copy">
         <div class="update-title">Update available — v<span id="updateVersion"></span></div>
         <div class="update-sub">You're on v<span id="currentVersion"></span>. Download the new version, unzip, and reload the extension.</div>
       </div>
-      <div>
+      <div class="update-actions">
         <a href="#" id="updateLink" class="update-btn">Update now</a>
         <button type="button" id="updateLater" class="update-later">Later</button>
       </div>

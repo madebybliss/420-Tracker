@@ -198,17 +198,26 @@ $('tzInfoBtn').addEventListener('click', () => {
   $('cityPanel').classList.toggle('open');
 });
 
-// Test popup fires the real popup in the active tab.
-$('testBtn').addEventListener('click', () => {
-  try { chrome.runtime.sendMessage({ type: 'TEST_POPUP', city: 'Test City', sound: $('soundEnabled').checked }); } catch (_) {}
+// Save first so a duration edited immediately before clicking Test cannot race
+// the background worker's settings read and show with the previous value.
+$('testBtn').addEventListener('click', async () => {
+  try {
+    await save();
+    await chrome.runtime.sendMessage({
+      type: 'TEST_POPUP',
+      city: 'Test City',
+      sound: $('soundEnabled').checked,
+    });
+  } catch (_) {}
 });
 
 // "Fire real 4:20 now" — simulate an actual 4:20 firing. Uses the real
 // firePopup path with a real timezone so it behaves exactly like a genuine
 // announcement (opens example.com if needed, fires the green popup).
-$('fireRealBtn').addEventListener('click', () => {
+$('fireRealBtn').addEventListener('click', async () => {
   try {
-    chrome.runtime.sendMessage({
+    await save();
+    await chrome.runtime.sendMessage({
       type: 'FIRE_REAL_420',
       city: 'London',   // pretend it just hit 4:20 in London
     });
