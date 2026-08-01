@@ -2,6 +2,32 @@
 
 All notable changes to 4:20 Tracker are recorded here.
 
+## [1.6.0] - 2026-07-31
+
+### Added
+
+- Optional **custom sound**: upload your own MP3 in Settings to play instead
+  of the bundled chime, with Preview and Remove controls. Off by default —
+  falls back to the default chime whenever no file is set. The file is stored
+  locally per-install (not synced), since it can be larger than
+  `chrome.storage.sync` allows; added the `unlimitedStorage` permission so
+  larger clips aren't blocked by the default local-storage quota.
+
+## [1.5.0] - 2026-07-31
+
+### Added
+
+- Optional **StreamYard / dedicated overlay tab** (`streamyard.html`), toggled
+  off by default in Settings. When enabled, alerts are also delivered to this
+  page independently of whichever tab is active/focused — useful when a tab
+  imported/captured by StreamYard blocks the normal popup. Open it as a
+  normal tab and capture it via Share Screen/Window Capture (not a
+  URL-based Browser Source, which can't run browser extensions).
+- Expanded timezone tracking from 39 to 49 zones, adding real-world 30- and
+  45-minute-offset zones (e.g. Kathmandu, Chatham Islands, Lord Howe Island,
+  Tehran, Kabul, Adelaide, Eucla, Yangon, St. John's, Marquesas) using their
+  IANA timezone identifiers.
+
 ## [1.4.9] - 2026-07-29
 
 ### Fixed

@@ -10,6 +10,8 @@ const DEFAULTS = {
   size: 'medium',
   enabled: true,
   testEvery10Min: false,
+  streamyardMode: false,
+  customSoundEnabled: false,
   brandChannel: '',
   brandLink: '',
   brandTagline: '',
@@ -30,14 +32,46 @@ async function load() {
   $('durationSec').value     = s.durationSec;
   $('soundEnabled').checked  = s.soundEnabled;
   $('testEvery10Min').checked = s.testEvery10Min;
+  $('streamyardMode').checked = s.streamyardMode;
+  $('customSoundEnabled').checked = s.customSoundEnabled;
   $('brandChannel').value    = s.brandChannel;
   $('brandLink').value       = s.brandLink;
   $('brandTagline').value    = s.brandTagline;
   $('brandLogoUrl').value    = s.brandLogoUrl;
   updateLogoPreview(s.brandLogoUrl);
   refreshTestCountdown();
+  refreshStreamyardPanel();
+  refreshCustomSoundPanel();
   refreshStatus();
   refreshUpdateBanner();
+  $('extVersion').textContent = `v${chrome.runtime.getManifest().version}`;
+}
+
+// Show/hide the StreamYard overlay panel and keep its URL field current.
+function refreshStreamyardPanel() {
+  const panel = $('streamyardPanel');
+  if (!$('streamyardMode').checked) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  $('streamyardUrl').value = chrome.runtime.getURL('streamyard.html');
+}
+
+// Show/hide the custom-sound panel and keep the current filename current.
+// The MP3 itself lives in chrome.storage.local (see customSoundFile's change
+// handler below) since it can be too large for chrome.storage.sync's quota.
+async function refreshCustomSoundPanel() {
+  const panel = $('customSoundPanel');
+  if (!$('customSoundEnabled').checked) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  const { customSoundName } = await chrome.storage.local.get('customSoundName');
+  $('customSoundName').textContent = customSoundName
+    ? `Using: ${customSoundName}`
+    : 'No file selected — using the default chime.';
 }
 
 async function refreshTestCountdown() {
@@ -102,6 +136,8 @@ async function save() {
     durationSec:   Math.min(120, Math.max(1, parseInt($('durationSec').value, 10) || 6)),
     soundEnabled:  $('soundEnabled').checked,
     testEvery10Min: $('testEvery10Min').checked,
+    streamyardMode: $('streamyardMode').checked,
+    customSoundEnabled: $('customSoundEnabled').checked,
     brandChannel:  $('brandChannel').value.trim(),
     brandLink:     $('brandLink').value.trim(),
     brandTagline:  $('brandTagline').value.trim(),
@@ -148,12 +184,82 @@ async function refreshStatus() {
 }
 
 // Wire up inputs — save on any change.
-['enabled','timezoneMode','position','size','durationSec','soundEnabled','testEvery10Min','brandChannel','brandLink','brandTagline'].forEach((id) => {
+['enabled','timezoneMode','position','size','durationSec','soundEnabled','testEvery10Min','streamyardMode','customSoundEnabled','brandChannel','brandLink','brandTagline'].forEach((id) => {
   $(id).addEventListener('change', async () => {
     await save();
     refreshStatus();
     if (id === 'testEvery10Min') refreshTestCountdown();
+    if (id === 'streamyardMode') refreshStreamyardPanel();
+    if (id === 'customSoundEnabled') refreshCustomSoundPanel();
   });
+});
+
+// Copy/open helpers for the StreamYard overlay URL.
+$('streamyardCopy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('streamyardUrl').value);
+    const btn = $('streamyardCopy');
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  } catch (_) {}
+});
+$('streamyardOpen').addEventListener('click', () => {
+  chrome.tabs.create({ url: $('streamyardUrl').value });
+});
+
+// Custom sound: read the chosen MP3 as a data URL and stash it in
+// chrome.storage.local (can be MBs — too big for chrome.storage.sync).
+const MAX_CUSTOM_SOUND_BYTES = 8 * 1024 * 1024; // 8MB safety cap
+
+$('customSoundFile').addEventListener('change', async () => {
+  const file = $('customSoundFile').files[0];
+  if (!file) return;
+  if (file.size > MAX_CUSTOM_SOUND_BYTES) {
+    $('customSoundName').textContent = 'That file is too large — please pick an MP3 under 8MB.';
+    $('customSoundFile').value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = async () => {
+    await chrome.storage.local.set({ customSoundDataUrl: reader.result, customSoundName: file.name });
+    refreshCustomSoundPanel();
+  };
+  reader.readAsDataURL(file);
+});
+
+$('customSoundPreview').addEventListener('click', async () => {
+  const { customSoundDataUrl } = await chrome.storage.local.get('customSoundDataUrl');
+  if (!customSoundDataUrl) return;
+  new Audio(customSoundDataUrl).play().catch(() => {});
+});
+
+$('customSoundRemove').addEventListener('click', async () => {
+  await chrome.storage.local.remove(['customSoundDataUrl', 'customSoundName']);
+  $('customSoundFile').value = '';
+  refreshCustomSoundPanel();
+});
+
+// "Use test sound" — loads the bundled sounds/test-sound.mp3 as the custom
+// sound. Handy for testing the feature without needing your own MP3 file.
+$('customSoundUseTest').addEventListener('click', async () => {
+  try {
+    const url = chrome.runtime.getURL('sounds/test-sound.mp3');
+    const blob = await (await fetch(url)).blob();
+    const reader = new FileReader();
+    reader.onload = async () => {
+      await chrome.storage.local.set({ customSoundDataUrl: reader.result, customSoundName: 'test-sound.mp3' });
+      $('customSoundFile').value = '';
+      refreshCustomSoundPanel();
+      const btn = $('customSoundUseTest');
+      const orig = btn.textContent;
+      btn.textContent = 'Added!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    };
+    reader.readAsDataURL(blob);
+  } catch (e) {
+    console.log('Could not load test sound:', e);
+  }
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {

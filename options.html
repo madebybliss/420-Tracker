@@ -237,10 +237,10 @@
             Timezones to track
             <button type="button" class="info-btn" id="tzInfoBtn" title="Show the list of cities" aria-label="Show cities">i</button>
           </label>
-          <div class="hint">"All" fires ~39 times/day. "Major" is 16 iconic cities.</div>
+          <div class="hint">"All" fires ~49 times/day. "Major" is 16 iconic cities.</div>
         </div>
         <select id="timezoneMode">
-          <option value="all">All major zones (39)</option>
+          <option value="all">All major zones (49)</option>
           <option value="major">Iconic cities only (16)</option>
         </select>
       </div>
@@ -248,8 +248,8 @@
       <div class="city-panel" id="cityPanel">
         <h4>Iconic cities (16) — "Major" mode</h4>
         <div class="cities">Auckland, Sydney, Tokyo, Hong Kong, Singapore, Mumbai, Dubai, Moscow, Berlin, Amsterdam, London, New York, Chicago, Denver, Los Angeles, Honolulu</div>
-        <h4>All major zones (39) — "All" mode</h4>
-        <div class="cities">Auckland, Sydney, Brisbane, Tokyo, Seoul, Hong Kong, Singapore, Bangkok, Jakarta, Dhaka, Mumbai, Karachi, Tashkent, Dubai, Baku, Moscow, Nairobi, Cairo, Athens, Amsterdam, Berlin, Paris, Rome, Madrid, London, Lagos, Casablanca, Reykjavik, New York, Toronto, Miami, Chicago, Mexico City, Denver, Phoenix, Los Angeles, Vancouver, Anchorage, Honolulu</div>
+        <h4>All major zones (49) — "All" mode</h4>
+        <div class="cities">Chatham Islands, Auckland, Lord Howe Island, Sydney, Brisbane, Adelaide, Tokyo, Seoul, Eucla, Hong Kong, Singapore, Bangkok, Jakarta, Dhaka, Yangon, Kathmandu, Mumbai, Karachi, Tashkent, Kabul, Dubai, Baku, Tehran, Moscow, Nairobi, Cairo, Athens, Amsterdam, Berlin, Paris, Rome, Madrid, London, Lagos, Casablanca, Reykjavik, St. John's, New York, Toronto, Miami, Chicago, Mexico City, Denver, Phoenix, Los Angeles, Vancouver, Anchorage, Marquesas, Honolulu</div>
         <div class="city-note">Each city fires once per day, the moment it hits 4:20 PM local time.</div>
       </div>
 
@@ -301,6 +301,26 @@
 
       <div class="row">
         <div>
+          <label for="customSoundEnabled">Use custom sound</label>
+          <div class="hint">Optional. Upload your own MP3 to play instead of the default chime.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="customSoundEnabled">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="test-countdown" id="customSoundPanel" style="display:none; text-align:left">
+        <div id="customSoundName" style="margin-bottom:8px">No file selected — using the default chime.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <input type="file" id="customSoundFile" accept="audio/mpeg,audio/mp3,.mp3" style="flex:1;min-width:160px;font-size:11px;color:var(--text-dim)">
+          <button type="button" id="customSoundPreview" style="width:auto;margin:0;padding:8px 10px;font-size:11px">Preview</button>
+          <button type="button" id="customSoundRemove" style="width:auto;margin:0;padding:8px 10px;font-size:11px;background:linear-gradient(135deg,#5a3a3a,#3a1a1a)">Remove</button>
+        </div>
+        <button type="button" id="customSoundUseTest" style="width:auto;margin-top:8px;padding:6px 10px;font-size:11px;background:transparent;border:1px solid rgba(118,222,130,0.4);color:var(--green-light)">Use test sound (no file needed)</button>
+      </div>
+
+      <div class="row">
+        <div>
           <label for="testEvery10Min">10-minute test mode</label>
           <div class="hint">Shows a test popup in the active webpage every 10 minutes until switched off.</div>
         </div>
@@ -310,6 +330,27 @@
         </label>
       </div>
       <div class="test-countdown" id="testCountdown" aria-live="off"></div>
+
+      <div class="row">
+        <div>
+          <label for="streamyardMode">StreamYard / dedicated overlay tab
+            <span style="font-size:10px;font-weight:700;letter-spacing:0.4px;text-transform:uppercase;color:var(--gold);border:1px solid rgba(255,226,138,0.4);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle">Experimental</span>
+          </label>
+          <div class="hint">Off by default. When on, alerts also show on a separate overlay tab that keeps working even when it isn't your active/focused tab — open it, then add it to StreamYard via Share Screen → Chrome Tab/Window Capture (not a URL-based Browser Source — those run in an isolated browser that can't load extensions).</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="streamyardMode">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="test-countdown" id="streamyardPanel" style="display:none; text-align:left">
+        <div style="margin-bottom:8px">Open this as a normal tab, then capture that tab/window in StreamYard (Share Screen) — don't paste it into a URL-based Browser Source field:</div>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="streamyardUrl" readonly style="flex:1;min-width:0;font-size:11px">
+          <button type="button" id="streamyardCopy" style="width:auto;margin:0;padding:8px 10px;font-size:11px">Copy</button>
+          <button type="button" id="streamyardOpen" style="width:auto;margin:0;padding:8px 10px;font-size:11px">Open</button>
+        </div>
+      </div>
 
       <button class="test-btn" id="testBtn">
         <svg viewBox="0 0 100 100" width="20" height="20" fill="currentColor" aria-hidden="true" style="vertical-align:-4px;margin-right:6px"><path d="M 47.28,6.45 L 48.42,7.02 L 49.28,9.03 L 51,17.91 L 52.15,18.77 L 52.44,23.07 L 53.87,22.78 L 53.87,18.77 L 55.59,15.23 L 57.31,11.49 L 58.74,7.18 L 61.04,5.46 L 64.49,5.75 L 67.08,8.05 L 67.94,12.07 L 67.65,16.09 L 66.79,20.4 L 65.35,24.71 L 63.63,28.82 L 61.61,32.93 L 59.88,37.24 L 58.74,41.84 L 59.31,43.85 L 61.32,42.99 L 63.92,40.4 L 66.79,37.52 L 70.24,34.36 L 74.26,31.2 L 78.57,28.32 L 82.88,25.86 L 86.62,24.27 L 89.5,24.27 L 91.51,26.28 L 91.51,29.44 L 89.21,32.9 L 85.75,35.78 L 81.73,38.66 L 77.42,41.26 L 73.11,43.56 L 69.08,45.58 L 65.35,47.3 L 64.49,49.02 L 66.5,49.88 L 70.24,49.88 L 74.55,49.88 L 79.15,49.88 L 83.46,50.46 L 87.19,51.9 L 89.5,54.2 L 89.5,57.07 L 87.48,59.37 L 83.75,60.24 L 79.15,60.24 L 74.26,59.66 L 69.66,58.51 L 65.35,57.07 L 61.61,55.35 L 58.45,53.62 L 57.02,54.77 L 57.6,57.36 L 59.03,61.1 L 60.46,65.41 L 61.9,69.72 L 62.76,74.03 L 62.76,77.76 L 61.32,80.07 L 58.74,80.64 L 56.16,79.2 L 54.43,75.75 L 53.29,71.44 L 52.43,66.84 L 51.86,62.53 L 51.57,58.51 L 51.28,55.06 L 50.71,53.62 L 50.13,55.06 L 49.85,58.51 L 49.56,62.53 L 48.99,66.84 L 48.13,71.44 L 46.99,75.75 L 45.27,79.2 L 42.68,80.64 L 40.1,80.07 L 38.66,77.76 L 38.66,74.03 L 39.52,69.72 L 40.96,65.41 L 42.39,61.1 L 43.82,57.36 L 44.4,54.77 L 42.97,53.62 L 39.81,55.35 L 36.07,57.07 L 31.76,58.51 L 27.16,59.66 L 22.27,60.24 L 17.67,60.24 L 13.94,59.37 L 11.92,57.07 L 11.92,54.2 L 14.23,51.9 L 17.96,50.46 L 22.27,49.88 L 26.58,49.88 L 30.89,49.88 L 34.62,49.88 L 36.64,49.02 L 35.78,47.3 L 32.04,45.58 L 28.02,43.56 L 23.71,41.26 L 19.4,38.66 L 15.38,35.78 L 11.92,32.9 L 9.62,29.44 L 9.62,26.28 L 11.63,24.27 L 14.51,24.27 L 18.24,24.27 L 21.99,25.86 L 26.29,28.32 L 30.6,31.2 L 34.62,34.36 L 38.08,37.52 L 40.96,40.4 L 43.54,42.99 L 45.56,43.85 L 46.13,41.84 L 44.98,37.24 L 43.25,32.93 L 41.53,28.82 L 39.81,24.71 L 38.38,20.4 L 37.52,16.09 L 37.23,12.07 L 38.08,8.05 L 40.68,5.75 L 44.12,5.46 L 46.41,7.18 L 47.85,11.49 L 49.56,15.23 L 51.28,18.77 L 51.28,22.78 L 52.72,23.07 Z"/></svg>
@@ -379,6 +420,7 @@
     </div>
 
     <p class="footer">For educational/medical cannabis content. Stay chill. <img src="icons/leaf.svg" alt="" style="width:16px;height:16px;vertical-align:-3px"></p>
+    <p class="footer" id="extVersion" style="margin-top:6px"></p>
   </div>
 
   <script src="options.js"></script>

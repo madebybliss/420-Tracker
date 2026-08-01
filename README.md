@@ -2,7 +2,7 @@
 
 # 4:20 Tracker — Global Cannabis Time
 
-Current version: **1.4.9**
+Current version: **1.6.0**
 
 See **[CHANGELOG.md](./CHANGELOG.md)** for release history.
 
@@ -18,11 +18,12 @@ extension announce 4:20 rolling across the globe throughout the day.
 
 ## Features
 
-- **Global tracking** — fires for 39 cities across major timezones (or 16 iconic cities — your choice).
+- **Global tracking** — fires for 49 cities across major timezones, including 30/45-minute-offset zones like Mumbai, Kathmandu, and Chatham Islands (or 16 iconic cities — your choice).
 - **Exact-minute alerts** — redundant scheduling checks during 4:20, with no misleading late alert at 4:21 or afterward.
 - **Works over any active webpage** — StreamYard, YouTube, Twitch, VDO.Ninja, social sites, and other normal `http://` or `https://` tabs.
 - **Customisable look** — pick popup **position** (6 corners/edges) and **size** (S/M/L). The popup slides in naturally from its chosen position.
 - **Optional chime** — soft pleasant sound when the popup appears (toggle on/off).
+- **Custom sound (optional)** — upload your own MP3 to play instead of the default chime. Off by default; falls back to the bundled chime whenever no file is set.
 - **Configurable duration** — remains fully visible for 1–120 seconds after its entrance animation, then dismisses.
 - **Click to dismiss** — click anywhere on the popup (or the close button) to close early.
 - **Cannabis theme** — green/gold glass card with shimmer text, custom cannabis-leaf branding throughout.
@@ -30,6 +31,7 @@ extension announce 4:20 rolling across the globe throughout the day.
 - **Toolbar popup** — shows the next upcoming 4:20 + countdown.
 - **Built-in diagnostics** — preview immediately, test the automatic scheduler at the next minute, simulate a real event, or reset the dedup cache.
 - **10-minute test mode** — switch on recurring test popups that follow the active webpage until switched off, with a live countdown in Settings.
+- **StreamYard / Streamlabs dedicated overlay tab (optional)** — a separate overlay page (`streamyard.html`) that receives alerts independently of whichever tab is active, for when a captured/imported tab blocks the normal popup. Open it as a normal tab and capture it via Share Screen/Window Capture. Off by default; toggle it on in Settings.
 - **Full settings page** — tracker, timezone, display, sound, testing, and channel-branding controls.
 - **Guided updates** — detects newer GitHub Releases, offers **Update now / Later**, and opens step-by-step Chrome/Brave instructions.
 - **No spam** — each tracked city fires at most once per local day.
@@ -69,12 +71,14 @@ Open via the toolbar popup → ** Full settings**, or right-click the icon → O
 | Setting            | What it does                                                |
 | ------------------ | ----------------------------------------------------------- |
 | Enable tracker     | Master on/off                                               |
-| Timezones to track | **All major zones (39)** or **Iconic cities only (16)**     |
+| Timezones to track | **All major zones (49)** or **Iconic cities only (16)**     |
 | Popup position     | 6 fixed spots: top/bottom × left/centre/right (slides in from there) |
 | Popup size         | Small, Medium, or Large                                     |
 | Display duration   | Seconds before auto-dismiss (1–120)                         |
 | Play chime         | Soft sound on popup                                          |
+| Use custom sound   | Optional (off by default). Upload your own MP3 to play instead of the chime, with Preview/Remove controls |
 | 10-minute test mode | Fires a recurring test popup in the active webpage every 10 minutes |
+| StreamYard / dedicated overlay tab | Off by default. When on, also delivers alerts to `streamyard.html`, independent of which tab is active. Open it as a normal tab and capture it (Share Screen/Window Capture) — don't paste it as a URL-based Browser Source |
 | Channel branding   | Optional: channel name, link, tagline, logo URL shown on every popup |
 
 ### Testing
@@ -155,7 +159,10 @@ normal Windows and macOS installations.
 `tz` is the [IANA timezone identifier](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).
 Add the city name to the `MAJOR_ONLY` array if you want it included in the "iconic" mode too.
 
-**Change the chime:** replace `sounds/chime.mp3` (keep the filename).
+**Change the chime:** replace `sounds/chime.mp3` (keep the filename) — this
+changes the default for everyone using this copy of the extension. For a
+per-user sound with no file editing, use Settings → **Use custom sound**
+instead (uploads an MP3 that plays only for that user, stored locally).
 
 **Change colours / text:** edit `popup.css` for the card look, and `content.js`
 for the `"Hey! It's 4:20"` / `"in {city}"` strings.
@@ -194,6 +201,43 @@ normal desktop-audio source; Window Capture itself may not capture audio.
  to manage it manually mid-stream.
 - Remember: popups **won't** fire on `chrome://` pages or the new-tab page —
  always have a real website as your active tab.
+
+---
+
+## Using StreamYard (or Streamlabs)
+
+If StreamYard's tab import/capture blocks the normal popup (this can happen
+because the tab it captures isn't treated as your active/focused tab), use the
+optional overlay tab instead. It's off by default — turn it on only if you
+need it.
+
+1. Open the extension's **Settings** (toolbar icon → Full settings, or
+ right-click the icon → Options).
+2. Turn on **StreamYard / dedicated overlay tab**.
+3. Click **Open** in the box that appears — this opens the overlay as a
+ normal tab in your actual browser.
+4. Go to that tab and **pin it** (right-click the tab → Pin) so it doesn't
+ get lost or accidentally closed.
+5. In StreamYard Studio, click **Add Source → Screen Share**, then choose
+ **Chrome Tab** and select the overlay tab you just opened (or use Window
+ Capture and pick that window if you gave it its own window).
+6. Resize/crop that source in your StreamYard layout so only the popup area
+ is visible over your scene, or leave it full-size with a transparent
+ background if your layout supports it.
+7. That's it — leave the tab open in the background. When 4:20 hits, the
+ alert slides in on that tab automatically, exactly like the normal popup,
+ and StreamYard is capturing it live.
+
+> **Don't** paste the `chrome-extension://…` link into a "Custom URL" or
+> "Browser Source" field in StreamYard — that loads pages in an isolated
+> renderer with no extensions, so it won't work. Always use **Share Screen →
+> Chrome Tab/Window**, which captures the real tab in your real browser.
+
+**Tip:** use **Test Popup** in Settings first to confirm the overlay tab is
+showing correctly in your StreamYard preview before going live.
+
+This is purely additive: leave the toggle off and everything behaves exactly
+as before, with the popup appearing only in the active tab.
 
 ---
 

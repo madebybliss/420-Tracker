@@ -7,6 +7,10 @@
 const DEFAULT_SETTINGS = {
   timezoneMode: 'all',        // 'all' = every major zone, 'major' = key cities only
   soundEnabled: true,         // play chime on popup
+  customSoundEnabled: false,  // play a user-uploaded MP3 instead of the bundled
+                               // chime. Off by default; the file itself lives in
+                               // chrome.storage.local (see customSoundDataUrl),
+                               // not here, because it can be too large for sync.
   durationSec: 6,             // how long popup stays before auto-dismiss
   position: 'top-right',      // 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
   size: 'medium',             // 'small' | 'medium' | 'large'
@@ -14,6 +18,9 @@ const DEFAULT_SETTINGS = {
   textColor: '#eafff0',       // popup text colour
   enabled: true,              // master on/off
   testEvery10Min: false,      // recurring test popup for stream/browser checks
+  streamyardMode: false,      // also deliver alerts to streamyard.html (a dedicated
+                               // overlay page) for use as a StreamYard/Streamlabs
+                               // browser source. Off by default — opt-in only.
   // Streamer branding (optional). Shown on every popup when brandChannel is set.
   brandChannel: '',           // e.g. "Bliss TV"
   brandLink: '',              // e.g. "https://youtube.com/@bliss"
@@ -27,21 +34,29 @@ const DEFAULT_SETTINGS = {
 // timezone id used to compute local time. `offset` is the standard
 // UTC offset in hours (for ordering / dedup).
 const TIMEZONES = [
+  { city: 'Chatham Islands',  tz: 'Pacific/Chatham',      offset: 12.75 },
   { city: 'Auckland',      tz: 'Pacific/Auckland',    offset: 12 },
+  { city: 'Lord Howe Island', tz: 'Australia/Lord_Howe', offset: 10.5 },
   { city: 'Sydney',        tz: 'Australia/Sydney',    offset: 10 },
   { city: 'Brisbane',      tz: 'Australia/Brisbane',  offset: 10 },
+  { city: 'Adelaide',      tz: 'Australia/Adelaide',  offset: 9.5 },
   { city: 'Tokyo',         tz: 'Asia/Tokyo',          offset: 9  },
   { city: 'Seoul',         tz: 'Asia/Seoul',          offset: 9  },
+  { city: 'Eucla',         tz: 'Australia/Eucla',     offset: 8.75 },
   { city: 'Hong Kong',     tz: 'Asia/Hong_Kong',      offset: 8  },
   { city: 'Singapore',     tz: 'Asia/Singapore',      offset: 8  },
   { city: 'Bangkok',       tz: 'Asia/Bangkok',        offset: 7  },
   { city: 'Jakarta',       tz: 'Asia/Jakarta',        offset: 7  },
   { city: 'Dhaka',         tz: 'Asia/Dhaka',          offset: 6  },
+  { city: 'Yangon',        tz: 'Asia/Yangon',         offset: 6.5 },
+  { city: 'Kathmandu',     tz: 'Asia/Kathmandu',      offset: 5.75 },
   { city: 'Mumbai',        tz: 'Asia/Kolkata',        offset: 5.5 },
   { city: 'Karachi',       tz: 'Asia/Karachi',        offset: 5  },
   { city: 'Tashkent',      tz: 'Asia/Tashkent',       offset: 5  },
+  { city: 'Kabul',         tz: 'Asia/Kabul',          offset: 4.5 },
   { city: 'Dubai',         tz: 'Asia/Dubai',          offset: 4  },
   { city: 'Baku',          tz: 'Asia/Baku',           offset: 4  },
+  { city: 'Tehran',        tz: 'Asia/Tehran',         offset: 3.5 },
   { city: 'Moscow',        tz: 'Europe/Moscow',       offset: 3  },
   { city: 'Nairobi',       tz: 'Africa/Nairobi',      offset: 3  },
   { city: 'Cairo',         tz: 'Africa/Cairo',        offset: 2  },
@@ -55,6 +70,7 @@ const TIMEZONES = [
   { city: 'Lagos',         tz: 'Africa/Lagos',        offset: 0  },
   { city: 'Casablanca',    tz: 'Africa/Casablanca',   offset: 0  },
   { city: 'Reykjavik',     tz: 'Atlantic/Reykjavik',  offset: 0  },
+  { city: "St. John's",    tz: 'America/St_Johns',    offset: -3.5 },
   { city: 'New York',      tz: 'America/New_York',    offset: -5 },
   { city: 'Toronto',       tz: 'America/Toronto',     offset: -5 },
   { city: 'Miami',         tz: 'America/New_York',    offset: -5 },
@@ -65,6 +81,7 @@ const TIMEZONES = [
   { city: 'Los Angeles',   tz: 'America/Los_Angeles', offset: -8 },
   { city: 'Vancouver',     tz: 'America/Vancouver',   offset: -8 },
   { city: 'Anchorage',     tz: 'America/Anchorage',   offset: -9 },
+  { city: 'Marquesas',     tz: 'Pacific/Marquesas',   offset: -9.5 },
   { city: 'Honolulu',      tz: 'Pacific/Honolulu',    offset: -10 },
 ];
 
@@ -203,6 +220,31 @@ async function waitForContentScript(tabId, timeoutMs) {
   return false;
 }
 
+// The dedicated overlay page users can add as a StreamYard/Streamlabs browser
+// source (see streamyard.html). It isn't necessarily the active/focused tab —
+// browser-source capture often runs it in the background — so it has to be
+// reached separately from the normal active-tab delivery below.
+const STREAMYARD_PAGE_URL = chrome.runtime.getURL('streamyard.html');
+
+async function deliverToStreamyardPages(payload) {
+  try {
+    const tabs = await chrome.tabs.query({});
+    let delivered = false;
+    for (const tab of tabs) {
+      if (!tab.url || !tab.url.startsWith(STREAMYARD_PAGE_URL)) continue;
+      try {
+        const response = await chrome.tabs.sendMessage(tab.id, payload);
+        if (response && response.ok) delivered = true;
+      } catch (_) {
+        // Overlay tab not ready yet (e.g. just opened) — the next tick retries.
+      }
+    }
+    return delivered;
+  } catch (_) {
+    return false;
+  }
+}
+
 // Fire the popup into the active tab and (optionally) play a sound.
 //
 // Behaviour:
@@ -217,6 +259,14 @@ async function waitForContentScript(tabId, timeoutMs) {
 async function firePopup(zone, settings) {
   const isTest = zone.tz === 'UTC';
 
+  // The custom sound file (if any) lives in chrome.storage.local, not in the
+  // synced settings, because it can be far larger than sync's per-item quota.
+  let customSoundUrl = null;
+  if (settings.customSoundEnabled) {
+    const { customSoundDataUrl } = await chrome.storage.local.get('customSoundDataUrl');
+    customSoundUrl = customSoundDataUrl || null;
+  }
+
   const messagePayload = {
     type: 'SHOW_420',
     city: zone.city,
@@ -226,6 +276,7 @@ async function firePopup(zone, settings) {
     textColor: settings.textColor,
     durationSec: settings.durationSec,
     soundEnabled: settings.soundEnabled,
+    customSoundUrl,
     brandChannel: settings.brandChannel,
     brandLink: settings.brandLink,
     brandTagline: settings.brandTagline,
@@ -254,34 +305,44 @@ async function firePopup(zone, settings) {
     return ready;
   };
 
+  let normalShown;
   try {
     // lastFocusedWindow identifies the window the user is actually viewing.
     // Looking at every tab could put the popup in an unrelated background tab.
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (!tab || isRestrictedUrl(tab.url)) {
-      return isTest ? await openAndFire() : false;
-    }
-
-    try {
-      await fireInto(tab);
-      return true;
-    } catch (_) {
-      // Most commonly an old page from before the extension was reloaded.
+      normalShown = isTest ? await openAndFire() : false;
+    } else {
       try {
-        await injectInto(tab);
         await fireInto(tab);
-        return true;
-      } catch (injectError) {
-        console.warn('[4:20 Tracker] Could not show popup in active tab:', injectError && injectError.message);
-        return isTest ? await openAndFire() : false;
+        normalShown = true;
+      } catch (_) {
+        // Most commonly an old page from before the extension was reloaded.
+        try {
+          await injectInto(tab);
+          await fireInto(tab);
+          normalShown = true;
+        } catch (injectError) {
+          console.warn('[4:20 Tracker] Could not show popup in active tab:', injectError && injectError.message);
+          normalShown = isTest ? await openAndFire() : false;
+        }
       }
     }
   } catch (e) {
     // Total failure — only show the fallback for manual tests, never for
     // real announcements.
     if (isTest) showFallbackNotification(zone);
-    return false;
+    normalShown = false;
   }
+
+  // Independently deliver to the optional StreamYard/Streamlabs overlay page,
+  // if enabled. It's a separate tab that may not be active/focused, so it
+  // can succeed or fail independently of the active-tab delivery above.
+  const streamyardShown = settings.streamyardMode
+    ? await deliverToStreamyardPages({ ...messagePayload, animation: positionToAnimation(settings.position) })
+    : false;
+
+  return normalShown || streamyardShown;
 }
 
 // Derive the entrance animation from the chosen fixed position so the popup

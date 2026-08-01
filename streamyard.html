@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>4:20 Tracker — StreamYard Overlay</title>
+  <!-- Same popup.css used by the normal in-page popup, so the alert looks
+       and animates identically here. -->
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: transparent; }
+    .sy-hint {
+      position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+      text-align: center; padding: 24px; pointer-events: none;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px; color: rgba(160, 200, 170, 0.55);
+    }
+  </style>
+</head>
+<body>
+  <div class="sy-hint">4:20 Tracker overlay is live — keep this tab/source open.<br>Alerts appear here automatically; nothing to click.</div>
+  <!-- Reuses content.js unmodified: same SHOW_420 listener, same heartbeat,
+       same popup markup/animation as the normal in-page popup. -->
+  <script src="content.js"></script>
+</body>
+</html>

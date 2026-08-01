@@ -11,9 +11,11 @@
   if (window.__four20TrackerInjected) return;
   window.__four20TrackerInjected = true;
 
-  // Preload the audio once so the first chime is instant.
+  // Preload the default chime once so the first play is instant. A custom
+  // user-uploaded sound (optional) is played fresh each time instead, since
+  // its URL can change between popups.
   let audioPromise = null;
-  function getAudio() {
+  function getDefaultAudio() {
     if (!audioPromise) {
       audioPromise = new Promise((resolve) => {
         const url = chrome.runtime.getURL('sounds/chime.mp3');
@@ -28,9 +30,15 @@
     return audioPromise;
   }
 
-  async function playChime() {
+  async function playChime(customSoundUrl) {
     try {
-      const audio = await getAudio();
+      if (customSoundUrl) {
+        const audio = new Audio(customSoundUrl);
+        audio.volume = 0.7;
+        await audio.play();
+        return;
+      }
+      const audio = await getDefaultAudio();
       audio.currentTime = 0;
       await audio.play();
     } catch (e) {
@@ -167,7 +175,7 @@
 
   function showPopup(msg) {
     const { city, animation, position, size, bgColor, textColor, durationSec, soundEnabled,
-            brandChannel, brandLink, brandTagline, brandLogoUrl } = msg;
+            customSoundUrl, brandChannel, brandLink, brandTagline, brandLogoUrl } = msg;
     const host = ensureHost();
     // Remove any popup currently on screen.
     const existing = host.querySelector('.f420-popup');
@@ -179,7 +187,7 @@
     });
     host.appendChild(overlay);
 
-    if (soundEnabled) playChime();
+    if (soundEnabled) playChime(customSoundUrl);
 
     let hideTimer = null;
     let entranceFallback = null;
