@@ -31,7 +31,7 @@ extension announce 4:20 rolling across the globe throughout the day.
 - **Toolbar popup** — shows the next upcoming 4:20 + countdown.
 - **Built-in diagnostics** — preview immediately, test the automatic scheduler at the next minute, simulate a real event, or reset the dedup cache.
 - **10-minute test mode** — switch on recurring test popups that follow the active webpage until switched off, with a live countdown in Settings.
-- **StreamYard / Streamlabs dedicated overlay tab (optional)** — a separate overlay page (`streamyard.html`) that receives alerts independently of whichever tab is active, for when a captured/imported tab blocks the normal popup. Open it as a normal tab and capture it via Share Screen/Window Capture. Off by default; toggle it on in Settings.
+- **StreamYard / Streamlabs dedicated overlay tab (optional, Experimental)** — a separate overlay page (`streamyard.html`) that receives alerts independently of whichever tab is active, for when a captured/imported tab blocks the normal popup. Open it as a normal tab and capture it via Share Screen/Window Capture. Off by default; toggle it on in Settings.
 - **Full settings page** — tracker, timezone, display, sound, testing, and channel-branding controls.
 - **Guided updates** — detects newer GitHub Releases, offers **Update now / Later**, and opens step-by-step Chrome/Brave instructions.
 - **No spam** — each tracked city fires at most once per local day.
@@ -78,7 +78,7 @@ Open via the toolbar popup → ** Full settings**, or right-click the icon → O
 | Play chime         | Soft sound on popup                                          |
 | Use custom sound   | Optional (off by default). Upload your own MP3 to play instead of the chime, with Preview/Remove controls |
 | 10-minute test mode | Fires a recurring test popup in the active webpage every 10 minutes |
-| StreamYard / dedicated overlay tab | Off by default. When on, also delivers alerts to `streamyard.html`, independent of which tab is active. Open it as a normal tab and capture it (Share Screen/Window Capture) — don't paste it as a URL-based Browser Source |
+| StreamYard / dedicated overlay tab (Experimental) | Off by default. When on, also delivers alerts to `streamyard.html`, independent of which tab is active. Open it as a normal tab and capture it (Share Screen/Window Capture) — don't paste it as a URL-based Browser Source |
 | Channel branding   | Optional: channel name, link, tagline, logo URL shown on every popup |
 
 ### Testing
@@ -204,7 +204,10 @@ normal desktop-audio source; Window Capture itself may not capture audio.
 
 ---
 
-## Using StreamYard (or Streamlabs)
+## Using StreamYard (or Streamlabs) — Experimental
+
+> ⚠️ **Experimental.** This workflow hasn't been verified against StreamYard's
+> actual capture behavior — treat it as a starting point, not a guarantee.
 
 If StreamYard's tab import/capture blocks the normal popup (this can happen
 because the tab it captures isn't treated as your active/focused tab), use the
@@ -241,7 +244,10 @@ as before, with the popup appearing only in the active tab.
 
 ---
 
-## Using VDO.Ninja instead of OBS
+## Using VDO.Ninja instead of OBS — Experimental
+
+> ⚠️ **Experimental.** This workflow hasn't been verified against VDO.Ninja's
+> actual capture behavior — treat it as a starting point, not a guarantee.
 
 **Yes — this works with VDO.Ninja too.** VDO.Ninja rooms are just webpages
 loaded into a browser, so the extension can fire its popup right on top of
