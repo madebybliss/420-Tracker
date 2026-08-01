@@ -141,7 +141,9 @@ normal Windows and macOS installations.
 ├── update.html / .js # Guided manual-update instructions
 ├── sounds/
 │ ├── chime.mp3 # Generated pleasant 3-note chime
-│ └── chime.ogg # OGG fallback
+│ ├── chime.ogg # OGG fallback
+│ └── test-sound.mp3 # Bundled test tone for the custom-sound Preview button
+├── streamyard.html # Optional dedicated overlay page (StreamYard/Streamlabs)
 └── icons/
  ├── icon16/32/48/128.png
  ├── default-logo.png
