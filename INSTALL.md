@@ -63,6 +63,7 @@ Open the folder. You should see these files **directly inside** it:
 ├── popup.js
 ├── options.html
 ├── options.js
+├── streamyard.html
 ├── README.md
 ├── INSTALL.md ← you are here
 ├── icons/ ← (folder with the leaf icons)
@@ -235,9 +236,11 @@ Edge will not replace its files automatically. Follow these steps:
 
 ### Confirm the installed version
 
-On the browser's extensions page, open **Details** for 4:20 Tracker and check
-that the displayed version matches the GitHub Release. If the old version is
-still shown, the new files were probably copied into a different folder.
+The quickest check: open the extension's **Settings** page and look at the
+bottom — it shows the installed version number. You can also open the
+browser's extensions page and check **Details** for 4:20 Tracker. Either way,
+confirm it matches the GitHub Release. If the old version is still shown, the
+new files were probably copied into a different folder.
 
 > **Do not remove the extension or load the downloaded folder as a second
 > extension.** Replace the files in the original folder and press Reload. This
@@ -277,6 +280,9 @@ folder — the one with `manifest.json` sitting directly inside it.
 
 ### No chime sound
 - Check that **Play chime** is toggled **on** in settings.
+- If **Use custom sound** is also on, check it actually has a file set (the
+ panel shows the filename, or "No file selected — using the default chime").
+ Use **Preview** to test it on its own, without waiting for a popup.
 - Browsers block audio on a tab **until you've clicked on it at least once**.
  Click anywhere on the page once — the next popup's chime will play.
 - Check your system volume isn't muted.
